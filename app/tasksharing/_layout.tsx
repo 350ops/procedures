@@ -14,7 +14,7 @@ export default function TaskSharingLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: "Task Sharing",
+          title: "A350 procedures",
           headerLargeTitle: true,
           headerTransparent: true,
           headerLargeStyle: { backgroundColor: "transparent" },
