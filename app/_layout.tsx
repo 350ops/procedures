@@ -10,6 +10,13 @@ export default function TabLayout() {
           drawable="custom_android_drawable"
         />
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="tasksharing">
+        <NativeTabs.Trigger.Label>Task Sharing</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf="person.2.fill"
+          drawable="custom_android_drawable"
+        />
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
