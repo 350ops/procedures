@@ -11,10 +11,9 @@
     "lint": "expo lint"
   },
   "dependencies": {
-    "@expo/ui": "0.2.0-canary-20251216-3f01dbf",
     "@expo/vector-icons": "^15.0.2",
     "@react-navigation/native": "^7.1.8",
-    "expo": "^55.0.0-canary-20251216-3f01dbf",
+    "expo": "55.0.0-canary-20251216-3f01dbf",
     "expo-blur": "16.0.0-canary-20251216-3f01dbf",
     "expo-constants": "18.1.0-canary-20251216-3f01dbf",
     "expo-dev-client": "6.1.0-canary-20251216-3f01dbf",
