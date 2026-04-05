@@ -20,7 +20,12 @@ async function ensurePdfUri(): Promise<string> {
     require("@/assets/A350___Tutorials.pdf")
   );
   await asset.downloadAsync();
-  cachedPdfUri = asset.localUri ?? asset.uri;
+  let uri = asset.localUri ?? asset.uri;
+  // Native modules may need a raw file path without the file:// scheme
+  if (uri.startsWith("file://")) {
+    uri = uri.replace("file://", "");
+  }
+  cachedPdfUri = uri;
   return cachedPdfUri;
 }
 
