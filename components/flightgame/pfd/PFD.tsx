@@ -1,6 +1,12 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+import AltitudeTape from "./AltitudeTape";
+import AttitudeIndicator from "./AttitudeIndicator";
+import HeadingTape from "./HeadingTape";
+import SpeedTape from "./SpeedTape";
+import VSI from "./VSI";
+
 export type PFDData = {
   iasKt: number;
   altFt: number;
@@ -19,93 +25,58 @@ type Props = {
   data: PFDData;
 };
 
+const FMA_H = 28;
+const HDG_H = 44;
+const SPD_W = 64;
+const ALT_W = 72;
+const VSI_W = 28;
+
 export default function PFD({ width, height, data }: Props) {
-  const pitchOffset = data.pitchDeg * 6;
+  const bodyH = Math.max(0, height - FMA_H - HDG_H);
+  const adiW = Math.max(0, width - SPD_W - ALT_W - VSI_W);
 
   return (
     <View style={[styles.container, { width, height }]}>
-      <View style={styles.fmaRow}>
+      <View style={[styles.fmaRow, { height: FMA_H }]}>
         <Text style={styles.fmaCell}>SPEED</Text>
         <Text style={styles.fmaCell}>APP-DES</Text>
         <Text style={styles.fmaCell}>NAV</Text>
-        <Text style={styles.fmaMin}>BARO 940</Text>
+        <Text style={styles.fmaMin}>
+          THR {Math.round(data.thrustPct)}%
+        </Text>
       </View>
 
-      <View style={styles.body}>
-        <View
-          style={[
-            styles.horizon,
-            {
-              transform: [
-                { translateY: pitchOffset },
-                { rotate: `${-data.bankDeg}deg` },
-              ],
-            },
-          ]}
-        >
-          <View style={styles.horizonTop} />
-          <View style={styles.horizonBottom} />
-          <View style={styles.horizonLine} />
+      <View style={[styles.body, { height: bodyH }]}>
+        <SpeedTape iasKt={data.iasKt} width={SPD_W} height={bodyH} />
+        <View style={{ width: adiW, height: bodyH }}>
+          <AttitudeIndicator
+            pitchDeg={data.pitchDeg}
+            bankDeg={data.bankDeg}
+            width={adiW}
+            height={bodyH}
+          />
+          {data.stalled && (
+            <View style={styles.stallBanner}>
+              <Text style={styles.stallText}>STALL</Text>
+            </View>
+          )}
+          {data.onGround && (
+            <View style={styles.groundBanner}>
+              <Text style={styles.groundText}>GROUND</Text>
+            </View>
+          )}
         </View>
-
-        <View style={styles.aircraftSymbol}>
-          <View style={styles.aircraftBar} />
-          <View style={styles.aircraftDot} />
-          <View style={styles.aircraftBar} />
-        </View>
-
-        {data.stalled && (
-          <View style={styles.stallBanner}>
-            <Text style={styles.stallText}>STALL</Text>
-          </View>
-        )}
-        {data.onGround && (
-          <View style={styles.groundBanner}>
-            <Text style={styles.groundText}>GROUND</Text>
-          </View>
-        )}
+        <AltitudeTape altFt={data.altFt} width={ALT_W} height={bodyH} />
+        <VSI vsFpm={data.vsFpm} width={VSI_W} height={bodyH} />
       </View>
 
-      <View style={styles.hud}>
-        <Row label="IAS" value={`${Math.round(data.iasKt)} kt`} />
-        <Row label="ALT" value={`${Math.round(data.altFt)} ft`} />
-        <Row label="V/S" value={`${Math.round(data.vsFpm)} fpm`} sign />
-        <Row label="HDG" value={`${pad3(data.headingDeg)}°`} />
-        <Row label="PIT" value={`${fmt1(data.pitchDeg)}°`} sign />
-        <Row label="BNK" value={`${fmt1(data.bankDeg)}°`} sign />
-        <Row label="THR" value={`${Math.round(data.thrustPct)}%`} />
-      </View>
+      <HeadingTape
+        headingDeg={data.headingDeg}
+        width={width}
+        height={HDG_H}
+      />
     </View>
   );
-}
-
-function Row({
-  label,
-  value,
-  sign = false,
-}: {
-  label: string;
-  value: string;
-  sign?: boolean;
-}) {
-  return (
-    <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={[styles.rowValue, sign && styles.rowValueMono]}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-function pad3(v: number) {
-  const n = Math.round(((v % 360) + 360) % 360);
-  return n.toString().padStart(3, "0");
-}
-
-function fmt1(v: number) {
-  const sign = v >= 0 ? "+" : "";
-  return `${sign}${v.toFixed(1)}`;
 }
 
 const styles = StyleSheet.create({
@@ -119,7 +90,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 8,
-    paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,230,0,0.4)",
     gap: 8,
@@ -137,67 +107,22 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   body: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-    overflow: "hidden",
-  },
-  horizon: {
-    position: "absolute",
-    top: "-100%",
-    left: "-50%",
-    right: "-50%",
-    bottom: "-100%",
-  },
-  horizonTop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: "50%",
-    backgroundColor: "#3a7ac8",
-  },
-  horizonBottom: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "50%",
-    backgroundColor: "#8a6a3a",
-  },
-  horizonLine: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: "50%",
-    height: 2,
-    backgroundColor: "#ffffff",
-  },
-  aircraftSymbol: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  aircraftBar: {
-    width: 34,
-    height: 4,
-    backgroundColor: "#ffe600",
-  },
-  aircraftDot: {
-    width: 8,
-    height: 8,
-    backgroundColor: "#ffe600",
-    borderRadius: 2,
+    alignItems: "stretch",
   },
   stallBanner: {
     position: "absolute",
-    top: 16,
+    top: 12,
+    alignSelf: "center",
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderWidth: 2,
     borderColor: "#ff1744",
     backgroundColor: "rgba(0,0,0,0.5)",
+    left: "50%",
+    marginLeft: -40,
+    width: 80,
+    alignItems: "center",
   },
   stallText: {
     color: "#ff1744",
@@ -207,41 +132,21 @@ const styles = StyleSheet.create({
   },
   groundBanner: {
     position: "absolute",
-    bottom: 48,
+    bottom: 12,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderWidth: 2,
     borderColor: "#ffb300",
     backgroundColor: "rgba(0,0,0,0.5)",
+    left: "50%",
+    marginLeft: -50,
+    width: 100,
+    alignItems: "center",
   },
   groundText: {
     color: "#ffb300",
     fontSize: 14,
     fontWeight: "900",
     letterSpacing: 2,
-  },
-  hud: {
-    position: "absolute",
-    left: 8,
-    bottom: 8,
-    gap: 2,
-  },
-  row: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  rowLabel: {
-    width: 32,
-    color: "rgba(0,230,118,0.7)",
-    fontSize: 11,
-    fontFamily: "Courier",
-  },
-  rowValue: {
-    color: "#00e676",
-    fontSize: 11,
-    fontFamily: "Courier",
-  },
-  rowValueMono: {
-    minWidth: 60,
   },
 });
