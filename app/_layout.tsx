@@ -6,6 +6,7 @@ export default function RootLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="tasksharing" />
       <Stack.Screen name="flowsimulator" />
+      <Stack.Screen name="flightgame" />
     </Stack>
   );
 }
