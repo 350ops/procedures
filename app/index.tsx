@@ -49,18 +49,18 @@ export default function HomeScreen() {
 
       <TouchableOpacity
         style={[styles.card, { backgroundColor: colors.card }]}
-        onPress={() => router.push("/flowsimulator")}
+        onPress={() => router.push("/flightgame")}
         activeOpacity={0.7}
       >
-        <View style={[styles.cardIcon, { backgroundColor: colors.flowBg }]}>
-          <Text style={styles.cardEmoji}>✈️</Text>
+        <View style={[styles.cardIcon, { backgroundColor: colors.gameBg }]}>
+          <Text style={styles.cardEmoji}>🕹️</Text>
         </View>
         <View style={styles.cardInfo}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>
-            Flow Simulator
+            Flight Game
           </Text>
           <Text style={[styles.cardDesc, { color: colors.secondaryText }]}>
-            Tutorial slides — Browse extracted content & practice flows
+            Two-finger PFD flying — left thrust, right sidestick
           </Text>
         </View>
         <Text style={[styles.chevron, { color: colors.secondaryText }]}>›</Text>
@@ -75,7 +75,7 @@ const lightColors = {
   text: "#000000",
   secondaryText: "#8e8e93",
   accentBg: "#E3F0FF",
-  flowBg: "#FFF3E0",
+  gameBg: "#E8F5E9",
 };
 
 const darkColors = {
@@ -84,7 +84,7 @@ const darkColors = {
   text: "#ffffff",
   secondaryText: "#8e8e93",
   accentBg: "#1a2a3a",
-  flowBg: "#3a2a1a",
+  gameBg: "#1a3a20",
 };
 
 const styles = StyleSheet.create({
