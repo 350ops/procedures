@@ -1,11 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import {
-  GestureResponderEvent,
-  PanResponder,
-  PanResponderGestureState,
-  StyleSheet,
-  View,
-} from "react-native";
+import { PanResponder, StyleSheet, View } from "react-native";
 
 export type SidestickValue = {
   x: number;
@@ -21,33 +15,40 @@ const CENTERING_RETURN = true;
 
 export default function Sidestick({ size, onChange }: Props) {
   const [value, setValue] = useState<SidestickValue>({ x: 0, y: 0 });
+
   const halfRef = useRef(size / 2);
   halfRef.current = size / 2;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
-  const update = (gesture: PanResponderGestureState, released: boolean) => {
-    const half = halfRef.current;
+  const update = (dx: number, dy: number, released: boolean) => {
     if (released && CENTERING_RETURN) {
       const next = { x: 0, y: 0 };
       setValue(next);
-      onChange(next);
+      onChangeRef.current(next);
       return;
     }
-    const x = Math.max(-1, Math.min(1, gesture.dx / half));
-    const y = Math.max(-1, Math.min(1, gesture.dy / half));
+    const half = Math.max(halfRef.current, 1);
+    const x = Math.max(-1, Math.min(1, dx / half));
+    const y = Math.max(-1, Math.min(1, dy / half));
     const next = { x, y };
     setValue(next);
-    onChange(next);
+    onChangeRef.current(next);
   };
 
   const responder = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
         onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (_e: GestureResponderEvent, g) => update(g, false),
-        onPanResponderMove: (_e, g) => update(g, false),
-        onPanResponderRelease: (_e, g) => update(g, true),
-        onPanResponderTerminate: (_e, g) => update(g, true),
+        onMoveShouldSetPanResponderCapture: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
+        onPanResponderGrant: (_e, g) => update(g.dx, g.dy, false),
+        onPanResponderMove: (_e, g) => update(g.dx, g.dy, false),
+        onPanResponderRelease: (_e, g) => update(g.dx, g.dy, true),
+        onPanResponderTerminate: (_e, g) => update(g.dx, g.dy, true),
       }),
     []
   );
@@ -78,6 +79,7 @@ const styles = StyleSheet.create({
   zone: {
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "transparent",
   },
   ring: {
     position: "absolute",

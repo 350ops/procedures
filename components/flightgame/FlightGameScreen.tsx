@@ -1,5 +1,6 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  BackHandler,
   LayoutChangeEvent,
   SafeAreaView,
   StatusBar,
@@ -89,6 +90,11 @@ export default function FlightGameScreen() {
       }
     }, [])
   );
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => true);
+    return () => sub.remove();
+  }, []);
 
   const onReset = useCallback(() => {
     stateRef.current = initialState();

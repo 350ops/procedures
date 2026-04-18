@@ -15,26 +15,35 @@ export default function ThrustLever({
   initial = 0,
 }: Props) {
   const [thrust, setThrust] = useState<number>(initial);
-  const startRef = useRef<number>(initial);
+
+  const thrustRef = useRef(initial);
+  const startRef = useRef(initial);
   const heightRef = useRef(height);
   heightRef.current = height;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   const responder = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponderCapture: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
         onPanResponderGrant: () => {
-          startRef.current = thrust;
+          startRef.current = thrustRef.current;
         },
         onPanResponderMove: (_e, g) => {
-          const delta = -g.dy / heightRef.current;
+          const delta = -g.dy / Math.max(heightRef.current, 1);
           const next = Math.max(0, Math.min(1, startRef.current + delta));
+          thrustRef.current = next;
           setThrust(next);
-          onChange(next);
+          onChangeRef.current(next);
         },
       }),
-    [thrust, onChange]
+    []
   );
 
   const leverY = (1 - thrust) * (height - 56);
@@ -63,6 +72,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     paddingTop: 12,
+    backgroundColor: "transparent",
   },
   track: {
     position: "absolute",
