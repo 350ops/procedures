@@ -1,15 +1,27 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+export type PFDData = {
+  iasKt: number;
+  altFt: number;
+  vsFpm: number;
+  headingDeg: number;
+  pitchDeg: number;
+  bankDeg: number;
+  thrustPct: number;
+  stalled: boolean;
+  onGround: boolean;
+};
+
 type Props = {
   width: number;
   height: number;
-  stickX: number;
-  stickY: number;
-  thrust: number;
+  data: PFDData;
 };
 
-export default function PFD({ width, height, stickX, stickY, thrust }: Props) {
+export default function PFD({ width, height, data }: Props) {
+  const pitchOffset = data.pitchDeg * 6;
+
   return (
     <View style={[styles.container, { width, height }]}>
       <View style={styles.fmaRow}>
@@ -20,9 +32,21 @@ export default function PFD({ width, height, stickX, stickY, thrust }: Props) {
       </View>
 
       <View style={styles.body}>
-        <View style={styles.horizonTop} />
-        <View style={styles.horizonBottom} />
-        <View style={styles.horizonLine} />
+        <View
+          style={[
+            styles.horizon,
+            {
+              transform: [
+                { translateY: pitchOffset },
+                { rotate: `${-data.bankDeg}deg` },
+              ],
+            },
+          ]}
+        >
+          <View style={styles.horizonTop} />
+          <View style={styles.horizonBottom} />
+          <View style={styles.horizonLine} />
+        </View>
 
         <View style={styles.aircraftSymbol}>
           <View style={styles.aircraftBar} />
@@ -30,22 +54,58 @@ export default function PFD({ width, height, stickX, stickY, thrust }: Props) {
           <View style={styles.aircraftBar} />
         </View>
 
-        <View style={styles.placeholderLabel}>
-          <Text style={styles.placeholderText}>PFD</Text>
-          <Text style={styles.placeholderSub}>physics pending (M2)</Text>
-        </View>
+        {data.stalled && (
+          <View style={styles.stallBanner}>
+            <Text style={styles.stallText}>STALL</Text>
+          </View>
+        )}
+        {data.onGround && (
+          <View style={styles.groundBanner}>
+            <Text style={styles.groundText}>GROUND</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.hud}>
-        <Text style={styles.hudText}>
-          stick  x {stickX.toFixed(2)}   y {stickY.toFixed(2)}
-        </Text>
-        <Text style={styles.hudText}>
-          thrust {(thrust * 100).toFixed(0)}%
-        </Text>
+        <Row label="IAS" value={`${Math.round(data.iasKt)} kt`} />
+        <Row label="ALT" value={`${Math.round(data.altFt)} ft`} />
+        <Row label="V/S" value={`${Math.round(data.vsFpm)} fpm`} sign />
+        <Row label="HDG" value={`${pad3(data.headingDeg)}°`} />
+        <Row label="PIT" value={`${fmt1(data.pitchDeg)}°`} sign />
+        <Row label="BNK" value={`${fmt1(data.bankDeg)}°`} sign />
+        <Row label="THR" value={`${Math.round(data.thrustPct)}%`} />
       </View>
     </View>
   );
+}
+
+function Row({
+  label,
+  value,
+  sign = false,
+}: {
+  label: string;
+  value: string;
+  sign?: boolean;
+}) {
+  return (
+    <View style={styles.row}>
+      <Text style={styles.rowLabel}>{label}</Text>
+      <Text style={[styles.rowValue, sign && styles.rowValueMono]}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function pad3(v: number) {
+  const n = Math.round(((v % 360) + 360) % 360);
+  return n.toString().padStart(3, "0");
+}
+
+function fmt1(v: number) {
+  const sign = v >= 0 ? "+" : "";
+  return `${sign}${v.toFixed(1)}`;
 }
 
 const styles = StyleSheet.create({
@@ -81,6 +141,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
+    overflow: "hidden",
+  },
+  horizon: {
+    position: "absolute",
+    top: "-100%",
+    left: "-50%",
+    right: "-50%",
+    bottom: "-100%",
   },
   horizonTop: {
     position: "absolute",
@@ -122,21 +190,35 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffe600",
     borderRadius: 2,
   },
-  placeholderLabel: {
+  stallBanner: {
     position: "absolute",
-    bottom: 24,
-    alignItems: "center",
+    top: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderWidth: 2,
+    borderColor: "#ff1744",
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
-  placeholderText: {
-    color: "#00e676",
-    fontSize: 28,
-    fontWeight: "800",
-    letterSpacing: 4,
+  stallText: {
+    color: "#ff1744",
+    fontSize: 16,
+    fontWeight: "900",
+    letterSpacing: 2,
   },
-  placeholderSub: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 11,
-    marginTop: 2,
+  groundBanner: {
+    position: "absolute",
+    bottom: 48,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderWidth: 2,
+    borderColor: "#ffb300",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  groundText: {
+    color: "#ffb300",
+    fontSize: 14,
+    fontWeight: "900",
+    letterSpacing: 2,
   },
   hud: {
     position: "absolute",
@@ -144,9 +226,22 @@ const styles = StyleSheet.create({
     bottom: 8,
     gap: 2,
   },
-  hudText: {
+  row: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  rowLabel: {
+    width: 32,
+    color: "rgba(0,230,118,0.7)",
+    fontSize: 11,
+    fontFamily: "Courier",
+  },
+  rowValue: {
     color: "#00e676",
     fontSize: 11,
     fontFamily: "Courier",
+  },
+  rowValueMono: {
+    minWidth: 60,
   },
 });
