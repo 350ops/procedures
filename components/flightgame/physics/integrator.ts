@@ -1,9 +1,9 @@
-import { casToTas, isa } from "./atmosphere";
-import { AircraftState, C, D2R, FT_TO_M } from "./state";
+import { casToTas, isa, tasToCas } from "./atmosphere";
+import { AircraftState, C, D2R, FT_TO_M, MS_TO_KT } from "./state";
 
 export type Inputs = {
   stickX: number; // -1..1, right = +roll
-  stickY: number; // -1..1, pull-back (+) = nose up
+  stickY: number; // -1..1, pull-back (+) = nose up (more nz)
   thrust: number; // 0..1
 };
 
@@ -14,6 +14,7 @@ const TWO_PI = Math.PI * 2;
 const wrap2pi = (x: number) => ((x % TWO_PI) + TWO_PI) % TWO_PI;
 
 const GAMMA_LIMIT = 60 * D2R;
+const STICK_DEADBAND = 0.05;
 
 export function step(
   s: AircraftState,
@@ -22,33 +23,76 @@ export function step(
 ): AircraftState {
   const altitude = -s.z;
   const { rho } = isa(altitude);
+  const v = Math.max(s.vTAS, 1);
+  const vCASKt = tasToCas(s.vTAS, rho) * MS_TO_KT;
 
-  // Thrust: first-order lag toward command, lapse linear with density.
+  // Thrust: first-order lag, density lapse.
   const thrustCmd = clamp(i.thrust, 0, 1);
   const lagAlpha = 1 - Math.exp(-dt / C.tauThrust);
   const thrustPct = s.thrustPct + (thrustCmd - s.thrustPct) * lagAlpha;
   const T = thrustPct * C.TmaxSL * (rho / C.rho0);
 
-  // Roll: stick-x → roll-rate demand, integrate phi, clamp.
-  const rollRateCmd = clamp(i.stickX, -1, 1) * C.rollRateMax;
+  // --- Protection flags (use prior-step α / current vCAS) ---
+  const alphaMax = C.CLmax / C.CLalpha + C.alpha0;
+  const alphaProt = C.alphaProtFrac * alphaMax;
+  const alphaProtActive = s.alpha > alphaProt;
+  const overspeed = vCASKt > C.vmoKt;
+  const phiLimit =
+    alphaProtActive || overspeed ? C.phiMaxProt : C.phiMaxClean;
+  const rollRateMax = alphaProtActive ? C.rollRateProt : C.rollRateMax;
+
+  // --- Lateral law: roll-rate demand + neutral-stick spiral logic ---
+  const stickX = clamp(i.stickX, -1, 1);
+  let rollRateCmd: number;
+  if (Math.abs(stickX) < STICK_DEADBAND) {
+    if (Math.abs(s.phi) <= C.phiHold) {
+      // Neutral spiral stability: hold current bank.
+      rollRateCmd = 0;
+    } else {
+      // Positive spiral stability: roll back toward ±33°.
+      const target = Math.sign(s.phi) * C.phiHold;
+      rollRateCmd = clamp(
+        (target - s.phi) / C.rollBackTau,
+        -rollRateMax,
+        rollRateMax
+      );
+    }
+  } else {
+    rollRateCmd = stickX * rollRateMax;
+  }
   let phi = s.phi + rollRateCmd * dt;
-  phi = clamp(phi, -C.phiMax, C.phiMax);
+  phi = clamp(phi, -phiLimit, phiLimit);
 
   // Heading via coordinated turn.
-  const v = Math.max(s.vTAS, 1);
   const psiDot = (C.g * Math.tan(phi)) / v;
   const psi = wrap2pi(s.psi + psiDot * dt);
 
-  // Pitch demand: nz from stick-y (pull back = +stickY → nz > 1).
-  const nzCmd = 1 + clamp(i.stickY, -1, 1);
+  // --- Longitudinal law: load-factor demand with turn compensation ---
+  const stickY = clamp(i.stickY, -1, 1);
+  // Turn compensation only inside the 33° envelope (FCOM Normal Law).
+  const turnComp =
+    Math.abs(phi) <= C.phiHold ? 1 / Math.cos(phi) : 1;
+  // Pulling back adds g above turnComp; pushing forward subtracts toward 0 g.
+  const nzSpan =
+    stickY >= 0 ? C.nzMax - turnComp : turnComp - C.nzMin;
+  let nzCmd = turnComp + stickY * nzSpan;
+
+  // High-speed protection: bias nose-up if overspeed.
+  if (overspeed) {
+    const ramp = clamp(
+      (vCASKt - C.vmoKt) / C.vmoBiasRangeKt,
+      0,
+      1
+    );
+    nzCmd = Math.max(nzCmd, turnComp + 0.3 * ramp);
+  }
   const nz = clamp(nzCmd, C.nzMin, C.nzMax);
 
-  // Required lift coefficient at current q, with stall clamp.
+  // Required CL at current q, with α-max clamp (= stall protection).
   const qS = 0.5 * rho * v * v * C.S;
   const liftNeeded = nz * s.mass * C.g;
   let CL = liftNeeded / Math.max(qS, 1);
-  const stalled = CL > C.CLmax;
-  if (stalled) CL = C.CLmax;
+  if (CL > C.CLmax) CL = C.CLmax;
   const L = CL * qS;
   const alpha = C.alpha0 + CL / C.CLalpha;
 
@@ -77,7 +121,6 @@ export function step(
   const x = s.x + vN * dt;
   const y = s.y + vE * dt;
   let z = s.z + vD * dt;
-  // Hard floor at ground level (no terrain yet).
   if (z > 0) z = 0;
 
   return {

@@ -37,14 +37,28 @@ export const C = {
   R: 287.05,
   gammaAir: 1.4,
 
-  // Control law
+  // Control law (A350 Normal Law, FCOM-derived)
   tauThrust: 2.0, // s, first-order thrust lag
-  phiMax: (33 * Math.PI) / 180,
-  thetaMax: (25 * Math.PI) / 180,
-  thetaMin: (-15 * Math.PI) / 180,
-  rollRateMax: (15 * Math.PI) / 180, // rad/s
-  nzMin: 0.0,
-  nzMax: 2.0,
+
+  // Lateral law
+  phiHold: (33 * Math.PI) / 180, // knee for spiral stability + turn comp
+  phiMaxClean: (67 * Math.PI) / 180, // bank limit, clean
+  phiMaxProt: (45 * Math.PI) / 180, // bank limit when a protection is active
+  rollRateMax: (15 * Math.PI) / 180, // rad/s, full sidestick
+  rollRateProt: (7.5 * Math.PI) / 180, // rad/s, under α-prot
+  rollBackTau: 4, // s, time const to roll back toward 33° beyond knee
+
+  // Pitch / load-factor law
+  thetaMax: (30 * Math.PI) / 180, // FCOM: +30° pitch attitude limit
+  thetaMin: (-15 * Math.PI) / 180, // FCOM: -15° pitch attitude limit
+  nzMin: 0.0, // clean (high-lift would be 1.0)
+  nzMax: 2.5, // clean (high-lift would be 2.0)
+
+  // α-protection
+  alphaProtFrac: 0.9, // α_prot ≈ 0.9·α_max
+  // High-speed protection
+  vmoKt: 340, // CAS, m/s converted at use site
+  vmoBiasRangeKt: 20, // CAS overshoot to ramp full nose-up bias
 
   // Initial condition
   initAltFt: 5000,
