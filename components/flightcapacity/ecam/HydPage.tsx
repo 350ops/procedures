@@ -1,53 +1,164 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import Svg, { Line } from "react-native-svg";
 
-const circuits = [
-  { id: "RED", color: "#ff3b30", psi: 0, status: "LOW", pump: "CB 1 ON" },
-  { id: "BLUE", color: "#2196f3", psi: 0, status: "LOW", pump: "CE X FEED" },
-  {
-    id: "GREEN",
-    color: "#30d158",
-    psi: 2500,
-    status: "OK",
-    pump: "GREEN HYD PUMP ON",
-  },
-  {
-    id: "WHITE",
-    color: "#ffffff",
-    psi: 2500,
-    status: "OK",
-    pump: "WHITE HYD PUMP ON",
-  },
-];
+const RED = "#ef4444";
+const GREEN = "#22c55e";
+const BLUE = "#5b8de6";
+const YELLOW = "#facc15";
 
 export default function HydPage() {
   return (
     <View style={styles.page}>
-      <View style={styles.row}>
-        {circuits.map((c) => (
-          <View key={c.id} style={styles.col}>
-            <Text style={[styles.heading, { color: c.color }]}>{c.id}</Text>
-            <Text style={styles.psi}>{c.psi}</Text>
-            <Text style={styles.psiUnit}>PSI</Text>
-            <View style={[styles.dot, { borderColor: c.color }]} />
-            <View
-              style={[
-                styles.box,
-                { borderColor: c.color },
-                c.status === "LOW" && { backgroundColor: "rgba(255,59,48,0.08)" },
-              ]}
-            >
-              <Text style={[styles.boxText, { color: c.color }]}>
-                {c.status === "LOW" ? "LOW" : c.pump}
-              </Text>
-            </View>
-            <View style={[styles.tank, { borderColor: c.color, backgroundColor: c.status === "LOW" ? "transparent" : "rgba(48,209,88,0.2)" }]} />
-          </View>
-        ))}
+      {/* Camera icon top-right */}
+      <View style={styles.camBox}>
+        <Text style={styles.camGlyph}>◉</Text>
       </View>
-      <Text style={styles.checklist}>CHECKLIST</Text>
-      <Text style={styles.line}>LH X FEED ON</Text>
-      <Text style={styles.line}>CE X FEED ON</Text>
+
+      {/* Column headers */}
+      <View style={styles.headerRow}>
+        <Text style={[styles.headerCell, { color: RED }]}>RED</Text>
+        <Text style={[styles.headerCell, { color: BLUE }]}>BLUE</Text>
+        <Text style={[styles.headerCell, { color: GREEN }]}>GREEN</Text>
+        <Text style={[styles.headerCell, { color: "#ffffff" }]}>WHITE</Text>
+      </View>
+
+      {/* PSI row */}
+      <View style={styles.psiRow}>
+        <View style={styles.psiCell}>
+          <Text style={[styles.psiValue, { color: RED }]}>0</Text>
+          <Text style={[styles.psiUnit, { color: RED }]}>PSI</Text>
+        </View>
+        <View style={styles.psiCell}>
+          <Text style={[styles.psiValue, { color: RED }]}>0</Text>
+          <Text style={[styles.psiUnit, { color: RED }]}>PSI</Text>
+        </View>
+        <View style={styles.psiCell}>
+          <Text style={[styles.psiValue, { color: GREEN }]}>2500</Text>
+          <Text style={[styles.psiUnit, { color: GREEN }]}>PSI</Text>
+        </View>
+        <View style={styles.psiCell}>
+          <Text style={[styles.psiValue, { color: GREEN }]}>2500</Text>
+          <Text style={[styles.psiUnit, { color: GREEN }]}>PSI</Text>
+        </View>
+      </View>
+
+      {/* Schematic area */}
+      <View style={styles.schematic}>
+        {/* SVG lines */}
+        <Svg
+          style={StyleSheet.absoluteFill}
+          width="100%"
+          height="100%"
+          preserveAspectRatio="none"
+        >
+          {/* Vertical main lines (upper portion) */}
+          <Line x1="10%" y1="0%" x2="10%" y2="45%" stroke={RED} strokeWidth={3} />
+          <Line x1="35%" y1="0%" x2="35%" y2="55%" stroke={RED} strokeWidth={3} />
+          <Line x1="60%" y1="0%" x2="60%" y2="55%" stroke={GREEN} strokeWidth={3} />
+          <Line x1="85%" y1="0%" x2="85%" y2="45%" stroke={GREEN} strokeWidth={3} />
+
+          {/* Horizontal cross feeds */}
+          <Line x1="10%" y1="18%" x2="35%" y2="18%" stroke={RED} strokeWidth={3} />
+          <Line x1="35%" y1="38%" x2="60%" y2="38%" stroke={RED} strokeWidth={3} />
+          <Line x1="60%" y1="18%" x2="85%" y2="18%" stroke={GREEN} strokeWidth={3} />
+
+          {/* Vertical lines (lower portion down to cylinders) */}
+          <Line x1="10%" y1="45%" x2="10%" y2="75%" stroke={RED} strokeWidth={3} />
+          <Line x1="35%" y1="55%" x2="35%" y2="75%" stroke={RED} strokeWidth={3} />
+          <Line x1="60%" y1="55%" x2="60%" y2="75%" stroke={GREEN} strokeWidth={3} />
+          <Line x1="85%" y1="45%" x2="85%" y2="75%" stroke={GREEN} strokeWidth={3} />
+        </Svg>
+
+        {/* LH X FEED valve */}
+        <View style={[styles.valve, { left: "20%", top: "16%" }]}>
+          <View style={styles.valveCircle}>
+            <View style={styles.valveBar} />
+          </View>
+          <Text style={styles.valveLabel}>LH X FEED</Text>
+        </View>
+
+        {/* CE X FEED valve */}
+        <View style={[styles.valve, { left: "46%", top: "36%" }]}>
+          <View style={styles.valveCircle}>
+            <View style={styles.valveBar} />
+          </View>
+          <Text style={[styles.valveLabel, { marginTop: 4 }]}>CE X FEED</Text>
+        </View>
+
+        {/* RH X FEED valve */}
+        <View style={[styles.valve, { left: "72%", top: "16%" }]}>
+          <View style={styles.valveCircle}>
+            <View style={styles.valveBar} />
+          </View>
+          <Text style={styles.valveLabel}>RH X FEED</Text>
+        </View>
+
+        {/* RED LOW box 1 (with CB marker) */}
+        <View style={[styles.pumpBox, { left: "10%", top: "45%" }]}>
+          <View style={[styles.cbTag, { borderColor: RED }]}>
+            <Text style={[styles.cbText, { color: RED }]}>CB 1{"\n"}ON</Text>
+          </View>
+          <View style={[styles.statusBox, { borderColor: RED }]}>
+            <Text style={[styles.statusText, { color: RED }]}>LOW</Text>
+          </View>
+        </View>
+
+        {/* RED LOW box 2 */}
+        <View style={[styles.pumpBox, { left: "35%", top: "55%" }]}>
+          <View style={[styles.statusBox, { borderColor: RED }]}>
+            <Text style={[styles.statusText, { color: RED }]}>LOW</Text>
+          </View>
+        </View>
+
+        {/* GREEN HYD PUMP ON */}
+        <View style={[styles.pumpBox, { left: "60%", top: "55%" }]}>
+          <View style={[styles.statusBoxTall, { borderColor: GREEN }]}>
+            <Text style={[styles.pumpText, { color: GREEN }]}>
+              GREEN{"\n"}HYD{"\n"}PUMP{"\n"}ON
+            </Text>
+          </View>
+        </View>
+
+        {/* WHITE HYD PUMP ON */}
+        <View style={[styles.pumpBox, { left: "85%", top: "45%" }]}>
+          <View style={[styles.cbTag, { borderColor: GREEN }]}>
+            <Text style={[styles.cbText, { color: GREEN }]}>CB 1{"\n"}ON</Text>
+          </View>
+          <View style={[styles.statusBoxTall, { borderColor: GREEN }]}>
+            <Text style={[styles.pumpText, { color: GREEN }]}>
+              WHITE{"\n"}HYD{"\n"}PUMP{"\n"}ON
+            </Text>
+          </View>
+        </View>
+
+        {/* Reservoir cylinders */}
+        <View style={[styles.tankWrap, { left: "10%", top: "77%" }]}>
+          <View style={[styles.tankFrame, { borderColor: "#14532d" }]} />
+        </View>
+        <View style={[styles.tankWrap, { left: "35%", top: "77%" }]}>
+          <View style={[styles.tankFrame, { borderColor: "#14532d" }]} />
+        </View>
+        <View style={[styles.tankWrap, { left: "60%", top: "77%" }]}>
+          <View style={[styles.tankFrame, { borderColor: GREEN }]}>
+            <View style={[styles.tankFill, { backgroundColor: GREEN }]} />
+          </View>
+        </View>
+        <View style={[styles.tankWrap, { left: "85%", top: "77%" }]}>
+          <View style={[styles.tankFrame, { borderColor: GREEN }]}>
+            <View style={[styles.tankFill, { backgroundColor: GREEN }]} />
+          </View>
+        </View>
+      </View>
+
+      {/* Checklist */}
+      <View style={styles.checklistWrap}>
+        <Text style={styles.checklistHeader}>CHECKLIST</Text>
+        <View style={styles.checklistLines}>
+          <Text style={styles.checklistLine}>LH X FEED ON</Text>
+          <Text style={styles.checklistLine}>CE X FEED ON</Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -55,70 +166,176 @@ export default function HydPage() {
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
-  row: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  col: {
-    flex: 1,
+  camBox: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 44,
+    height: 44,
+    borderWidth: 3,
+    borderColor: BLUE,
     alignItems: "center",
-    gap: 2,
+    justifyContent: "center",
   },
-  heading: {
+  camGlyph: {
+    color: BLUE,
+    fontSize: 20,
+  },
+  headerRow: {
+    flexDirection: "row",
+    width: "85%",
+    justifyContent: "space-around",
+    marginBottom: 8,
+  },
+  headerCell: {
+    flex: 1,
+    textAlign: "center",
+    fontWeight: "700",
+    fontSize: 14,
+    letterSpacing: 2,
+  },
+  psiRow: {
+    flexDirection: "row",
+    width: "85%",
+    justifyContent: "space-around",
+    marginBottom: 10,
+  },
+  psiCell: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  psiValue: {
     fontSize: 13,
     fontWeight: "700",
-  },
-  psi: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 12,
+    fontFamily: "Courier",
   },
   psiUnit: {
-    color: "#ffd600",
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "700",
   },
-  dot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: "#fff",
-    marginVertical: 2,
-    backgroundColor: "#ffd600",
+  schematic: {
+    flex: 1,
+    position: "relative",
+    marginHorizontal: 4,
   },
-  box: {
-    borderWidth: 1,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    width: "100%",
+  valve: {
+    position: "absolute",
     alignItems: "center",
-    marginTop: 2,
+    transform: [{ translateX: -20 }, { translateY: -20 }],
   },
-  boxText: {
+  valveCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 3,
+    borderColor: YELLOW,
+    backgroundColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  valveBar: {
+    width: 3,
+    height: 22,
+    backgroundColor: YELLOW,
+  },
+  valveLabel: {
+    color: YELLOW,
     fontSize: 9,
     fontWeight: "700",
-    textAlign: "center",
+    marginTop: 2,
+    letterSpacing: 1,
   },
-  tank: {
-    width: 18,
-    height: 26,
+  pumpBox: {
+    position: "absolute",
+    width: 52,
+    transform: [{ translateX: -26 }],
+    alignItems: "center",
+  },
+  cbTag: {
+    borderWidth: 1,
+    paddingHorizontal: 2,
+    paddingVertical: 1,
+    marginBottom: 3,
+    backgroundColor: "#000",
+  },
+  cbText: {
+    fontSize: 8,
+    fontWeight: "700",
+    textAlign: "center",
+    lineHeight: 10,
+  },
+  statusBox: {
     borderWidth: 2,
-    marginTop: 6,
+    backgroundColor: "#000",
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 42,
   },
-  checklist: {
-    color: "#fff",
+  statusText: {
     fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-    marginTop: 14,
+    fontWeight: "700",
   },
-  line: {
-    color: "#fff",
+  statusBoxTall: {
+    borderWidth: 2,
+    backgroundColor: "#000",
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 58,
+  },
+  pumpText: {
+    fontSize: 8,
+    fontWeight: "700",
+    textAlign: "center",
+    lineHeight: 10,
+  },
+  tankWrap: {
+    position: "absolute",
+    alignItems: "center",
+    transform: [{ translateX: -9 }],
+  },
+  tankFrame: {
+    width: 18,
+    height: 56,
+    borderWidth: 2,
+    backgroundColor: "transparent",
+    justifyContent: "flex-end",
+  },
+  tankFill: {
+    width: "100%",
+    height: "100%",
+  },
+  checklistWrap: {
+    alignItems: "center",
+    marginTop: 4,
+  },
+  checklistHeader: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 4,
+    fontFamily: "Courier",
+  },
+  checklistLines: {
+    alignSelf: "flex-start",
+    marginLeft: "6%",
+  },
+  checklistLine: {
+    color: "#ffffff",
     fontSize: 11,
-    marginLeft: 8,
+    fontFamily: "Courier",
+    lineHeight: 15,
   },
 });
