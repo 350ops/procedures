@@ -65,6 +65,25 @@ export default function HomeScreen() {
         </View>
         <Text style={[styles.chevron, { color: colors.secondaryText }]}>›</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.card, { backgroundColor: colors.card }]}
+        onPress={() => router.push("/flightcapacity")}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.cardIcon, { backgroundColor: colors.capacityBg }]}>
+          <Text style={styles.cardEmoji}>📡</Text>
+        </View>
+        <View style={styles.cardInfo}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>
+            Flight Capacity Test
+          </Text>
+          <Text style={[styles.cardDesc, { color: colors.secondaryText }]}>
+            Multi-tasking: TCAS, VOR, ECAM snapshots, audio callouts
+          </Text>
+        </View>
+        <Text style={[styles.chevron, { color: colors.secondaryText }]}>›</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -76,6 +95,7 @@ const lightColors = {
   secondaryText: "#8e8e93",
   accentBg: "#E3F0FF",
   gameBg: "#E8F5E9",
+  capacityBg: "#FFF3E0",
 };
 
 const darkColors = {
@@ -85,6 +105,7 @@ const darkColors = {
   secondaryText: "#8e8e93",
   accentBg: "#1a2a3a",
   gameBg: "#1a3a20",
+  capacityBg: "#3a2a10",
 };
 
 const styles = StyleSheet.create({
