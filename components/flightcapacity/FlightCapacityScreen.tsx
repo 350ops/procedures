@@ -154,10 +154,10 @@ export default function FlightCapacityScreen() {
   }
 
   const isPortrait = layout.w > 0 && layout.h > layout.w;
-  const radarColW = Math.floor(Math.min(layout.h, layout.w * 0.3));
-  const controlsColW = Math.floor(layout.w * 0.34);
+  const radarColW = Math.floor(layout.w * 0.45);
+  const controlsColW = Math.floor(layout.w * 0.20);
   const ecamColW = Math.max(0, layout.w - radarColW - controlsColW);
-  const radarSize = Math.min(radarColW, layout.h);
+  const radarSize = Math.min(radarColW - 16, layout.h - 16);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -258,24 +258,29 @@ function formatClock(secs: number) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "#8d9ab3",
   },
   root: {
     flex: 1,
     flexDirection: "row",
     alignItems: "stretch",
-    backgroundColor: "#000",
+    backgroundColor: "#8d9ab3",
   },
   col: {
-    backgroundColor: "#000",
+    backgroundColor: "transparent",
   },
   radarCol: {
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 8,
+    paddingLeft: 8,
+    paddingRight: 4,
   },
   controlsCol: {
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 4,
   },
   rotateWrap: {
     ...StyleSheet.absoluteFillObject,

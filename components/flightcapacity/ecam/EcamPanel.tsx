@@ -32,24 +32,29 @@ export default function EcamPanel({
   onClear,
   onTakeSnapshot,
 }: Props) {
+  const showingSnapshotPrompt =
+    pendingEvent &&
+    pendingEvent.requestsSnapshot &&
+    !pendingEvent.snapshotTaken &&
+    activePage === pendingEvent.page;
+
   return (
     <View style={styles.panel}>
       <View style={styles.header}>
         <View style={styles.clock}>
           <Text style={styles.clockText}>{clock}</Text>
         </View>
+
         <View style={styles.masterRow}>
           <TouchableOpacity
             onPress={onPressMasterCaution}
-            style={[
-              styles.master,
-              masterCaution && styles.masterActiveAmber,
-            ]}
-            activeOpacity={0.7}
+            style={[styles.master, masterCaution && styles.masterActiveAmber]}
+            activeOpacity={0.75}
           >
             <Text style={styles.masterText}>Master</Text>
             <Text style={styles.masterText}>Caution</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             onPress={onPressMasterWarning}
             style={[
@@ -57,7 +62,7 @@ export default function EcamPanel({
               styles.masterWarning,
               masterWarning && styles.masterActiveRed,
             ]}
-            activeOpacity={0.7}
+            activeOpacity={0.75}
           >
             <Text style={styles.masterText}>Master</Text>
             <Text style={styles.masterText}>Warning</Text>
@@ -75,21 +80,27 @@ export default function EcamPanel({
             active={activePage === "fuel"}
             onPress={() => onSelectPage("fuel")}
           />
-          <TouchableOpacity style={styles.clrBtn} onPress={onClear}>
-            <Text style={styles.clrText}>CLR</Text>
+          <TouchableOpacity style={styles.pageBtn} onPress={onClear}>
+            <Text style={styles.pageBtnText}>CLR</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.body}>
-        {pendingEvent && pendingEvent.requestsSnapshot && !pendingEvent.snapshotTaken && activePage === pendingEvent.page ? (
+        {showingSnapshotPrompt ? (
           <View style={styles.snapshot}>
             <Text style={styles.snapshotText}>
-              Take a snapshot of {pendingEvent.page.toUpperCase()} page
+              Take a snapshot of {pendingEvent!.page.toUpperCase()} page
             </Text>
-            <TouchableOpacity onPress={onTakeSnapshot} style={styles.camBtn}>
-              <Text style={styles.camText}>◉</Text>
-            </TouchableOpacity>
+            <View style={styles.camFrameWrap}>
+              <View style={[styles.corner, styles.cornerTL]} />
+              <View style={[styles.corner, styles.cornerTR]} />
+              <View style={[styles.corner, styles.cornerBL]} />
+              <View style={[styles.corner, styles.cornerBR]} />
+              <TouchableOpacity onPress={onTakeSnapshot} style={styles.camBtn}>
+                <Text style={styles.camText}>◉</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : activePage === "fuel" ? (
           <FuelPage />
@@ -116,6 +127,7 @@ function PageButton({
     <TouchableOpacity
       onPress={onPress}
       style={[styles.pageBtn, active && styles.pageBtnActive]}
+      activeOpacity={0.8}
     >
       <Text style={styles.pageBtnText}>{label}</Text>
     </TouchableOpacity>
@@ -126,108 +138,145 @@ const styles = StyleSheet.create({
   panel: {
     flex: 1,
     backgroundColor: "#000",
+    borderLeftWidth: 2,
+    borderLeftColor: "#000",
   },
   header: {
-    backgroundColor: "#2e6a2e",
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 14,
+    backgroundColor: "#1f591b",
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 16,
+    minHeight: 160,
+    alignItems: "center",
+    justifyContent: "center",
   },
   clock: {
     position: "absolute",
-    top: 12,
-    right: 14,
-    backgroundColor: "#86b7ff",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    top: 8,
+    right: 8,
+    backgroundColor: "#5b8de6",
+    paddingHorizontal: 16,
+    paddingVertical: 3,
   },
   clockText: {
-    color: "#000",
-    fontWeight: "700",
-    fontSize: 14,
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 20,
+    fontFamily: "Courier",
+    letterSpacing: 1,
   },
   masterRow: {
     flexDirection: "row",
-    gap: 16,
-    marginTop: 4,
-    marginLeft: 20,
+    gap: 14,
+    marginTop: 22,
   },
   master: {
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: "#fff",
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     alignItems: "center",
+    justifyContent: "center",
+    minWidth: 110,
+    minHeight: 60,
   },
   masterWarning: {
-    borderColor: "#ff3b30",
+    borderColor: "#ef4444",
   },
   masterActiveAmber: {
-    backgroundColor: "#ffb300",
+    backgroundColor: "#f0a020",
   },
   masterActiveRed: {
-    backgroundColor: "#ff3b30",
+    backgroundColor: "#c81a15",
   },
   masterText: {
     color: "#fff",
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "500",
+    lineHeight: 18,
   },
   btnRow: {
     flexDirection: "row",
-    gap: 10,
-    marginTop: 12,
+    gap: 14,
+    marginTop: 16,
   },
   pageBtn: {
-    backgroundColor: "#c9d1d9",
-    paddingHorizontal: 20,
+    backgroundColor: "#e2e8f0",
+    paddingHorizontal: 14,
     paddingVertical: 4,
-    borderRadius: 2,
+    minWidth: 64,
+    alignItems: "center",
+    justifyContent: "center",
   },
   pageBtnActive: {
     backgroundColor: "#ffffff",
   },
   pageBtnText: {
     color: "#000",
-    fontWeight: "600",
-    fontSize: 13,
-  },
-  clrBtn: {
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 20,
-    paddingVertical: 4,
-    borderRadius: 2,
-  },
-  clrText: {
-    color: "#000",
-    fontWeight: "600",
-    fontSize: 13,
+    fontWeight: "700",
+    fontSize: 14,
+    letterSpacing: 0.5,
   },
   body: {
     flex: 1,
+    backgroundColor: "#000",
   },
   snapshot: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 24,
+    paddingHorizontal: 20,
+    gap: 40,
   },
   snapshotText: {
     color: "#fff",
     fontSize: 22,
-    fontWeight: "500",
+    textAlign: "center",
+  },
+  camFrameWrap: {
+    width: 90,
+    height: 90,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  corner: {
+    position: "absolute",
+    width: 16,
+    height: 16,
+    borderColor: "#5b8de6",
+  },
+  cornerTL: {
+    top: -4,
+    left: -4,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+  },
+  cornerTR: {
+    top: -4,
+    right: -4,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+  },
+  cornerBL: {
+    bottom: -4,
+    left: -4,
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+  },
+  cornerBR: {
+    bottom: -4,
+    right: -4,
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
   },
   camBtn: {
     width: 64,
     height: 64,
-    borderWidth: 2,
-    borderColor: "#5eb8ff",
-    borderRadius: 4,
     alignItems: "center",
     justifyContent: "center",
   },
   camText: {
-    color: "#5eb8ff",
-    fontSize: 32,
+    color: "#5b8de6",
+    fontSize: 44,
   },
 });

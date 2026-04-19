@@ -1,10 +1,14 @@
 import React, { useMemo } from "react";
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Svg, {
+  Circle,
+  G,
+  Line,
+  Path,
+  Polyline,
+  Rect,
+  Text as SvgText,
+} from "react-native-svg";
 import type {
   Traffic,
   Vec,
@@ -36,282 +40,234 @@ export default function Radar({
   const cx = size / 2;
   const cy = size / 2;
 
-  const project = (p: Vec) => ({
-    left: cx + p.x * nmToPx,
-    top: cy + p.y * nmToPx,
-  });
+  const ringOuter = (size / 2) - 2;
+  const ringInner = ringOuter - 10;
 
-  const headingTicks = useMemo(
-    () =>
-      Array.from({ length: 36 }, (_, i) => i * 10).map((deg) => {
-        const rad = ((deg - 90) * Math.PI) / 180;
-        const outer = cx - 2;
-        const tickLen = deg % 30 === 0 ? 14 : 7;
-        const x1 = cx + Math.cos(rad) * outer;
-        const y1 = cy + Math.sin(rad) * outer;
-        const x2 = cx + Math.cos(rad) * (outer - tickLen);
-        const y2 = cy + Math.sin(rad) * (outer - tickLen);
-        const labelR = outer - tickLen - 10;
-        const lx = cx + Math.cos(rad) * labelR;
-        const ly = cy + Math.sin(rad) * labelR;
-        const label =
-          deg === 0
-            ? "N"
-            : deg === 90
-              ? "E"
-              : deg === 180
-                ? "S"
-                : deg === 270
-                  ? "W"
-                  : deg.toString().padStart(3, "0").replace(/^0/, "");
-        return { deg, x1, y1, x2, y2, lx, ly, label };
-      }),
-    [cx, cy]
-  );
+  const ticks = useMemo(() => {
+    const arr: {
+      deg: number;
+      isMajor: boolean;
+      label: string | null;
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      lx: number;
+      ly: number;
+    }[] = [];
+    for (let i = 0; i < 360; i += 5) {
+      const isMajor = i % 10 === 0;
+      let label: string | null = null;
+      if (i === 0) label = "N";
+      else if (i === 90) label = "E";
+      else if (i === 180) label = "S";
+      else if (i === 270) label = "W";
+      else if (isMajor) label = i.toString().padStart(3, "0");
+
+      const rad = ((i - 90) * Math.PI) / 180;
+      const tickLen = isMajor ? 16 : 8;
+      const x1 = cx + Math.cos(rad) * ringInner;
+      const y1 = cy + Math.sin(rad) * ringInner;
+      const x2 = cx + Math.cos(rad) * (ringInner - tickLen);
+      const y2 = cy + Math.sin(rad) * (ringInner - tickLen);
+      const labelR = ringInner - tickLen - 12;
+      const lx = cx + Math.cos(rad) * labelR;
+      const ly = cy + Math.sin(rad) * labelR;
+      arr.push({ deg: i, isMajor, label, x1, y1, x2, y2, lx, ly });
+    }
+    return arr;
+  }, [cx, cy, ringInner]);
+
+  const innerRingR = innerRingNM * nmToPx;
+  const outerRingR = outerRingNM * nmToPx;
 
   const selectedVorObj = vors.find((v) => v.id === selectedVor) ?? null;
-  const routeLineStyle = selectedVorObj
-    ? ((): any => {
-        const p = project(selectedVorObj.pos);
-        const dx = p.left - cx;
-        const dy = p.top - cy;
-        const len = Math.hypot(dx, dy);
-        const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-        return {
-          position: "absolute",
-          left: cx,
-          top: cy,
-          width: len,
-          height: 2,
-          backgroundColor: "#d946ef",
-          transform: [{ translateY: -1 }, { rotate: `${angle}deg` }],
-          transformOrigin: "0% 50%",
-        };
-      })()
-    : null;
 
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
-      <View style={[styles.face, { borderRadius: size / 2 }]}>
-        {headingTicks.map((t) => (
-          <View
-            key={t.deg}
-            style={{
-              position: "absolute",
-              left: Math.min(t.x1, t.x2),
-              top: Math.min(t.y1, t.y2),
-              width: Math.max(2, Math.abs(t.x2 - t.x1)),
-              height: Math.max(2, Math.abs(t.y2 - t.y1)),
-              backgroundColor: "#ffffff",
-            }}
+      <Svg width={size} height={size}>
+        {/* Outer white ring */}
+        <Circle
+          cx={cx}
+          cy={cy}
+          r={ringOuter}
+          stroke="#ffffff"
+          strokeWidth={3}
+          fill="#111111"
+        />
+
+        {/* Compass ticks */}
+        {ticks.map((t) => (
+          <Line
+            key={`t-${t.deg}`}
+            x1={t.x1}
+            y1={t.y1}
+            x2={t.x2}
+            y2={t.y2}
+            stroke="#ffffff"
+            strokeWidth={t.isMajor ? 3 : 2}
           />
         ))}
-        {headingTicks
-          .filter((t) => t.deg % 30 === 0)
+
+        {/* Compass labels */}
+        {ticks
+          .filter((t) => t.label)
           .map((t) => (
-            <Text
-              key={`lbl-${t.deg}`}
-              style={[
-                styles.tickLabel,
-                { left: t.lx - 14, top: t.ly - 8 },
-              ]}
+            <SvgText
+              key={`l-${t.deg}`}
+              x={t.lx}
+              y={t.ly}
+              fill="#ffffff"
+              fontSize={t.deg % 90 === 0 ? 18 : 13}
+              fontWeight="bold"
+              textAnchor="middle"
+              alignmentBaseline="middle"
             >
               {t.label}
-            </Text>
+            </SvgText>
           ))}
 
-        <Ring
+        {/* Dashed range rings */}
+        <Circle
           cx={cx}
           cy={cy}
-          radius={outerRingNM * nmToPx}
-          dashed
+          r={outerRingR}
+          stroke="#ffffff"
+          strokeWidth={3}
+          strokeDasharray="8 6"
+          fill="none"
+          opacity={0.9}
         />
-        <Ring
+        <Circle
           cx={cx}
           cy={cy}
-          radius={innerRingNM * nmToPx}
-          dashed
+          r={innerRingR}
+          stroke="#ffffff"
+          strokeWidth={3}
+          strokeDasharray="8 6"
+          fill="none"
+          opacity={0.9}
         />
 
-        <Text
-          style={[
-            styles.ringLabel,
-            { left: cx - outerRingNM * nmToPx - 26, top: cy - 8 },
-          ]}
-        >
-          5NM
-        </Text>
+        {/* Route line to selected VOR */}
+        {selectedVorObj && (
+          <Line
+            x1={cx}
+            y1={cy}
+            x2={cx + selectedVorObj.pos.x * nmToPx}
+            y2={cy + selectedVorObj.pos.y * nmToPx}
+            stroke="#d946ef"
+            strokeWidth={2}
+          />
+        )}
 
-        {routeLineStyle && <View style={routeLineStyle} />}
-
+        {/* VOR waypoints */}
         {vors.map((v) => {
-          const p = project(v.pos);
+          const px = cx + v.pos.x * nmToPx;
+          const py = cy + v.pos.y * nmToPx;
           return (
-            <View
-              key={v.id}
-              style={[styles.vor, { left: p.left - 16, top: p.top - 16 }]}
-              pointerEvents="none"
-            >
-              <Text style={styles.vorLabel}>{v.id}</Text>
-              <Text style={styles.vorCross}>+</Text>
-            </View>
+            <G key={`vor-${v.id}`}>
+              <Line
+                x1={px - 10}
+                y1={py}
+                x2={px + 10}
+                y2={py}
+                stroke="#5b8de6"
+                strokeWidth={3}
+              />
+              <Line
+                x1={px}
+                y1={py - 10}
+                x2={px}
+                y2={py + 10}
+                stroke="#5b8de6"
+                strokeWidth={3}
+              />
+              <SvgText
+                x={px + 14}
+                y={py - 6}
+                fill="#ffffff"
+                fontSize={10}
+                fontWeight="600"
+              >
+                {v.id}
+              </SvgText>
+            </G>
           );
         })}
 
-        {traffic
-          .filter((t) => !t.resolved)
-          .map((t) => {
-            const p = project(t.pos);
-            const dist = Math.hypot(t.pos.x, t.pos.y);
-            const visible = dist <= radarMaxNM;
-            if (!visible) return null;
-            const altTag =
-              (t.relAlt >= 0 ? "+" : "") + t.relAlt + "ft";
-            return (
-              <TouchableOpacity
-                key={t.id}
-                style={[
-                  styles.trafficHit,
-                  { left: p.left - 22, top: p.top - 22 },
-                ]}
-                onPress={() => onTrafficPress(t.id)}
-                activeOpacity={0.6}
-              >
-                <View
-                  style={[
-                    styles.diamond,
-                    t.selected && styles.diamondSelected,
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.trafficCallsign,
-                    t.selected && styles.trafficCallsignSelected,
-                  ]}
-                >
-                  {t.callsign}
-                </Text>
-                <Text style={styles.trafficAlt}>{altTag}</Text>
-              </TouchableOpacity>
-            );
-          })}
-
-        <View
-          style={[styles.ownship, { left: cx - 14, top: cy - 14 }]}
-          pointerEvents="none"
+        {/* 5 NM label on inner ring */}
+        <Rect
+          x={cx - innerRingR - 30}
+          y={cy - 8}
+          width={30}
+          height={16}
+          fill="#111111"
+        />
+        <SvgText
+          x={cx - innerRingR - 15}
+          y={cy}
+          fill="#ffffff"
+          fontSize={12}
+          fontWeight="700"
+          textAnchor="middle"
+          alignmentBaseline="middle"
         >
-          <View style={styles.ownshipFuselage} />
-          <View style={styles.ownshipWings} />
-          <View style={styles.ownshipTail} />
-        </View>
-      </View>
-    </View>
-  );
-}
+          5NM
+        </SvgText>
 
-function Ring({
-  cx,
-  cy,
-  radius,
-  dashed,
-}: {
-  cx: number;
-  cy: number;
-  radius: number;
-  dashed?: boolean;
-}) {
-  return (
-    <View
-      pointerEvents="none"
-      style={{
-        position: "absolute",
-        left: cx - radius,
-        top: cy - radius,
-        width: radius * 2,
-        height: radius * 2,
-        borderRadius: radius,
-        borderWidth: 2,
-        borderColor: "#ffffff",
-        borderStyle: dashed ? "dashed" : "solid",
-        opacity: 0.75,
-      }}
-    />
+        {/* Ownship — airplane glyph */}
+        <G transform={`translate(${cx - 14}, ${cy - 14})`}>
+          <Path
+            d="M21,16V14L13,9V3.5A1.5,1.5 0 0,0 11.5,2A1.5,1.5 0 0,0 10,3.5V9L2,14V16L10,13.5V19L8,20.5V22L11.5,21L15,22V20.5L13,19V13.5L21,16Z"
+            fill="#5b8de6"
+            scale={1.2}
+          />
+        </G>
+      </Svg>
+
+      {/* Traffic touch targets (on top of SVG as absolute Views) */}
+      {traffic
+        .filter((t) => !t.resolved)
+        .map((t) => {
+          const dist = Math.hypot(t.pos.x, t.pos.y);
+          if (dist > radarMaxNM) return null;
+          const left = cx + t.pos.x * nmToPx - 22;
+          const top = cy + t.pos.y * nmToPx - 22;
+          const altTag = (t.relAlt >= 0 ? "+" : "") + t.relAlt;
+          return (
+            <TouchableOpacity
+              key={t.id}
+              style={[styles.trafficHit, { left, top }]}
+              onPress={() => onTrafficPress(t.id)}
+              activeOpacity={0.6}
+            >
+              <View
+                style={[styles.diamond, t.selected && styles.diamondSelected]}
+              />
+              <Text
+                style={[
+                  styles.trafficCallsign,
+                  t.selected && styles.trafficCallsignSelected,
+                ]}
+              >
+                {t.callsign}
+              </Text>
+              <Text style={styles.trafficAlt}>{altTag}</Text>
+            </TouchableOpacity>
+          );
+        })}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: "#000",
+    backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
-  },
-  face: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    overflow: "hidden",
-  },
-  tickLabel: {
-    position: "absolute",
-    color: "#ffffff",
-    fontSize: 10,
-    width: 28,
-    textAlign: "center",
-  },
-  ringLabel: {
-    position: "absolute",
-    color: "#ffffff",
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  ownship: {
-    position: "absolute",
-    width: 28,
-    height: 28,
-  },
-  ownshipFuselage: {
-    position: "absolute",
-    left: 13,
-    top: 2,
-    width: 2,
-    height: 24,
-    backgroundColor: "#5eb8ff",
-    borderRadius: 1,
-  },
-  ownshipWings: {
-    position: "absolute",
-    left: 2,
-    top: 13,
-    width: 24,
-    height: 2,
-    backgroundColor: "#5eb8ff",
-    borderRadius: 1,
-  },
-  ownshipTail: {
-    position: "absolute",
-    left: 8,
-    top: 22,
-    width: 12,
-    height: 2,
-    backgroundColor: "#5eb8ff",
-    borderRadius: 1,
-  },
-  vor: {
-    position: "absolute",
-    width: 32,
-    alignItems: "center",
-  },
-  vorLabel: {
-    color: "#5eb8ff",
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  vorCross: {
-    color: "#5eb8ff",
-    fontSize: 20,
-    lineHeight: 20,
+    borderWidth: 1,
+    borderColor: "#556",
   },
   trafficHit: {
     position: "absolute",
@@ -320,10 +276,10 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   diamond: {
-    width: 10,
-    height: 10,
-    borderWidth: 1.5,
-    borderColor: "#5eb8ff",
+    width: 12,
+    height: 12,
+    borderWidth: 2,
+    borderColor: "#5b8de6",
     backgroundColor: "transparent",
     transform: [{ rotate: "45deg" }],
   },
@@ -332,9 +288,9 @@ const styles = StyleSheet.create({
     borderColor: "#30d158",
   },
   trafficCallsign: {
-    color: "#5eb8ff",
-    fontSize: 9,
-    marginTop: 2,
+    color: "#ffffff",
+    fontSize: 10,
+    marginTop: 4,
     fontWeight: "600",
   },
   trafficCallsignSelected: {
@@ -342,7 +298,6 @@ const styles = StyleSheet.create({
   },
   trafficAlt: {
     color: "#ffffff",
-    fontSize: 8,
-    marginTop: 1,
+    fontSize: 9,
   },
 });
