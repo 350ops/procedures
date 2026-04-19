@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import { PanResponder, StyleSheet, View } from "react-native";
+import { PanResponder, StyleSheet, View, Image } from "react-native";
 
 type Props = {
   width: number;
@@ -15,26 +15,35 @@ export default function ThrustLever({
   initial = 0,
 }: Props) {
   const [thrust, setThrust] = useState<number>(initial);
-  const startRef = useRef<number>(initial);
+
+  const thrustRef = useRef(initial);
+  const startRef = useRef(initial);
   const heightRef = useRef(height);
   heightRef.current = height;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   const responder = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponderCapture: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
         onPanResponderGrant: () => {
-          startRef.current = thrust;
+          startRef.current = thrustRef.current;
         },
         onPanResponderMove: (_e, g) => {
-          const delta = -g.dy / heightRef.current;
+          const delta = -g.dy / Math.max(heightRef.current, 1);
           const next = Math.max(0, Math.min(1, startRef.current + delta));
+          thrustRef.current = next;
           setThrust(next);
-          onChange(next);
+          onChangeRef.current(next);
         },
       }),
-    [thrust, onChange]
+    []
   );
 
   const leverY = (1 - thrust) * (height - 56);
@@ -52,7 +61,12 @@ export default function ThrustLever({
         />
       ))}
       <View style={[styles.lever, { top: leverY }]}>
-        <View style={styles.leverHandle} />
+        <View style={styles.leverHandle}>
+          <Image
+            source={require("@/components/flightgame/controls/thrust.png")}
+            style={{ width: "100%", height: "100%", resizeMode: "contain" }}
+          />
+        </View>
       </View>
     </View>
   );
@@ -63,6 +77,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     paddingTop: 12,
+    backgroundColor: "transparent",
   },
   track: {
     position: "absolute",
@@ -86,11 +101,9 @@ const styles = StyleSheet.create({
     height: 56,
   },
   leverHandle: {
-    width: 54,
-    height: 26,
-    borderRadius: 6,
-    backgroundColor: "#ffb300",
-    borderWidth: 2,
-    borderColor: "#3d2a00",
+    width: 80,
+    height: 80,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
