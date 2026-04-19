@@ -1,450 +1,910 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
-  useColorScheme,
+  Pressable,
+  ScrollView,
+  Platform,
 } from "react-native";
-import { getAllTaskItems, type CrewRole, type RoleLabeling } from "@/data/tasksharing";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { SymbolView } from "expo-symbols";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  ZoomIn,
+  useAnimatedProps,
+  useSharedValue,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
+import Svg, { Circle } from "react-native-svg";
+import * as Haptics from "expo-haptics";
+import {
+  flightPhases,
+  getAllTaskItems,
+  type CrewRole,
+  type RoleLabeling,
+} from "@/data/tasksharing";
+import { iOS } from "./quizDesign";
+import { savePhaseResult } from "./quizProgress";
 
-function shuffleArray<T>(arr: T[]): T[] {
-  const shuffled = [...arr];
-  for (let i = shuffled.length - 1; i > 0; i--) {
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+type Question = {
+  id: string;
+  action: string;
+  value: string;
+  condition?: string;
+  role: CrewRole;
+  options: CrewRole[];
+  phaseName: string;
+  sectionTitle: string;
+};
+
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    [out[i], out[j]] = [out[j], out[i]];
   }
-  return shuffled;
+  return out;
+}
+
+function buildQuestions(phaseId?: string): Question[] {
+  const all = getAllTaskItems();
+  const filtered = phaseId
+    ? all.filter((item) => {
+        const phase = flightPhases.find((p) => p.id === phaseId);
+        return phase ? phase.name === item.phaseName : true;
+      })
+    : all;
+  return shuffle(filtered).map((item) => ({
+    id: item.id,
+    action: item.action,
+    value: item.value,
+    condition: item.condition,
+    role: item.role,
+    options: optionsFor(item.roleLabeling),
+    phaseName: item.phaseName,
+    sectionTitle: item.sectionTitle,
+  }));
+}
+
+function optionsFor(labeling: RoleLabeling): CrewRole[] {
+  return labeling === "CM1_CM2" ? ["CM1", "CM2"] : ["PF", "PM"];
+}
+
+function roleDescription(role: CrewRole): string {
+  switch (role) {
+    case "CM1":
+      return "Commander (LH seat)";
+    case "CM2":
+      return "Co-pilot (RH seat)";
+    case "PF":
+      return "Pilot Flying";
+    case "PM":
+      return "Pilot Monitoring";
+    default:
+      return "Both pilots";
+  }
 }
 
 export default function QuizScreen() {
-  const theme = useColorScheme() === "dark" ? "dark" : "light";
-  const colors = theme === "dark" ? darkColors : lightColors;
-
-  const allItems = useMemo(() => shuffleArray(getAllTaskItems()), []);
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<CrewRole | null>(null);
-  const [score, setScore] = useState({ correct: 0, incorrect: 0 });
-  const [showResult, setShowResult] = useState(false);
-
-  const currentItem = allItems[currentIdx];
-  const isFinished = currentIdx >= allItems.length;
-
-  const getOptions = useCallback(
-    (labeling: RoleLabeling): CrewRole[] => {
-      return labeling === "CM1_CM2" ? ["CM1", "CM2"] : ["PF", "PM"];
-    },
-    []
+  const router = useRouter();
+  const params = useLocalSearchParams<{ phaseId?: string }>();
+  const phaseId = params.phaseId;
+  const phase = useMemo(
+    () => flightPhases.find((p) => p.id === phaseId),
+    [phaseId],
   );
+  const initialQuestions = useMemo(() => buildQuestions(phaseId), [phaseId]);
 
-  const handleAnswer = useCallback(
-    (answer: CrewRole) => {
-      if (showResult) return;
-      setSelectedAnswer(answer);
-      setShowResult(true);
-      if (answer === currentItem.role) {
-        setScore((prev) => ({ ...prev, correct: prev.correct + 1 }));
-      } else {
-        setScore((prev) => ({ ...prev, incorrect: prev.incorrect + 1 }));
+  // Cap the quiz to 10 questions for a focused session
+  const QUIZ_LENGTH = Math.min(10, initialQuestions.length);
+  const [questions, setQuestions] = useState<Question[]>(() =>
+    initialQuestions.slice(0, QUIZ_LENGTH),
+  );
+  const [qIdx, setQIdx] = useState(0);
+  const [selected, setSelected] = useState<CrewRole | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [answers, setAnswers] = useState<boolean[]>([]);
+  const [finished, setFinished] = useState(false);
+
+  const q = questions[qIdx];
+  const total = questions.length;
+  const isCorrect = revealed && selected === q?.role;
+
+  const handleSelect = useCallback(
+    (role: CrewRole) => {
+      if (revealed) return;
+      setSelected(role);
+      if (Platform.OS === "ios") {
+        Haptics.selectionAsync();
       }
     },
-    [showResult, currentItem]
+    [revealed],
   );
 
+  const handleSubmit = useCallback(() => {
+    if (selected === null || !q) return;
+    const correct = selected === q.role;
+    setRevealed(true);
+    setAnswers((a) => [...a, correct]);
+    if (Platform.OS === "ios") {
+      Haptics.notificationAsync(
+        correct
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Warning,
+      );
+    }
+  }, [selected, q]);
+
   const handleNext = useCallback(() => {
-    setCurrentIdx((i) => i + 1);
-    setSelectedAnswer(null);
-    setShowResult(false);
-  }, []);
+    if (qIdx + 1 >= total) {
+      const correctCount = answers.filter(Boolean).length;
+      const pct = (correctCount / total) * 100;
+      savePhaseResult(phaseId ?? "_global", pct);
+      setFinished(true);
+      return;
+    }
+    setQIdx((i) => i + 1);
+    setSelected(null);
+    setRevealed(false);
+  }, [qIdx, total, answers, phaseId]);
 
-  const handleRestart = useCallback(() => {
-    setCurrentIdx(0);
-    setSelectedAnswer(null);
-    setShowResult(false);
-    setScore({ correct: 0, incorrect: 0 });
-  }, []);
+  const handleRetry = useCallback(() => {
+    const fresh = buildQuestions(phaseId).slice(0, QUIZ_LENGTH);
+    setQuestions(fresh);
+    setQIdx(0);
+    setSelected(null);
+    setRevealed(false);
+    setAnswers([]);
+    setFinished(false);
+  }, [phaseId, QUIZ_LENGTH]);
 
-  if (isFinished) {
-    const pct = Math.round(
-      (score.correct / (score.correct + score.incorrect)) * 100
-    );
+  if (!q && !finished) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: colors.bg }]}>
-        <Text style={[styles.finishedTitle, { color: colors.text }]}>
-          Quiz Complete!
-        </Text>
-        <Text style={[styles.finishedScore, { color: colors.accent }]}>
-          {score.correct} / {score.correct + score.incorrect}
-        </Text>
-        <Text style={[styles.finishedPct, { color: colors.secondaryText }]}>
-          {pct}% correct
-        </Text>
-        <View style={styles.finishedBar}>
-          <View
-            style={[
-              styles.finishedBarFill,
-              {
-                backgroundColor: colors.correctBtn,
-                width: `${pct}%`,
-              },
-            ]}
-          />
+      <SafeAreaView style={{ flex: 1, backgroundColor: iOS.bg }}>
+        <View style={styles.centered}>
+          <Text style={styles.emptyText}>No questions available.</Text>
         </View>
-        <TouchableOpacity
-          style={[styles.restartBtn, { backgroundColor: colors.accent }]}
-          onPress={handleRestart}
-        >
-          <Text style={styles.restartBtnText}>Restart Quiz</Text>
-        </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     );
   }
 
-  const options = getOptions(currentItem.roleLabeling);
-  const total = score.correct + score.incorrect;
+  if (finished) {
+    return (
+      <ResultsScreen
+        phaseName={phase?.name ?? "Mixed phases"}
+        answers={answers}
+        onRetry={handleRetry}
+        onHome={() => router.back()}
+      />
+    );
+  }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Progress */}
-      <View style={[styles.header, { backgroundColor: colors.card }]}>
-        <View style={styles.headerInfo}>
-          <Text style={[styles.questionCounter, { color: colors.secondaryText }]}>
-            Question {currentIdx + 1} of {allItems.length}
-          </Text>
-          <Text style={[styles.scoreText, { color: colors.text }]}>
-            {score.correct} correct · {score.incorrect} wrong
-          </Text>
-        </View>
-        <View
-          style={[styles.progressTrack, { backgroundColor: colors.progressBg }]}
+    <SafeAreaView
+      edges={["top", "bottom"]}
+      style={{ flex: 1, backgroundColor: iOS.bg }}
+    >
+      {/* Top bar */}
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [
+            styles.closeBtn,
+            pressed && { transform: [{ scale: 0.94 }] },
+          ]}
+          hitSlop={12}
         >
-          <View
-            style={[
-              styles.progressFill,
-              {
-                backgroundColor: colors.accent,
-                width: `${((currentIdx + 1) / allItems.length) * 100}%`,
-              },
-            ]}
+          <SymbolView
+            name="xmark"
+            size={12}
+            tintColor={iOS.label}
+            weight="semibold"
+            resizeMode="scaleAspectFit"
+            style={{ width: 12, height: 12 }}
           />
+        </Pressable>
+        <View style={styles.pillRow}>
+          {questions.map((_, i) => {
+            let bg: string = iOS.fill3;
+            if (i < qIdx) bg = answers[i] ? iOS.green : iOS.red;
+            else if (i === qIdx)
+              bg = revealed ? (isCorrect ? iOS.green : iOS.red) : iOS.label;
+            return <View key={i} style={[styles.pill, { backgroundColor: bg }]} />;
+          })}
         </View>
+        <Text style={styles.counter}>
+          {qIdx + 1}/{total}
+        </Text>
       </View>
 
-      {/* Question card */}
-      <View style={styles.cardContainer}>
-        <View style={[styles.questionCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.phaseLabel, { color: colors.secondaryText }]}>
-            {currentItem.phaseName}
-          </Text>
-
-          <Text style={[styles.questionAction, { color: colors.text }]}>
-            {currentItem.action}
-          </Text>
-          {currentItem.value ? (
-            <Text style={[styles.questionValue, { color: colors.valueText }]}>
-              {currentItem.value}
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Phase chip */}
+        <View style={styles.chipRow}>
+          <View style={styles.chip}>
+            <View style={styles.chipDot} />
+            <Text style={styles.chipText}>
+              {q.phaseName} · {q.sectionTitle}
             </Text>
-          ) : null}
-
-          {currentItem.condition && (
-            <View
-              style={[
-                styles.conditionBadge,
-                { backgroundColor: colors.conditionBg },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.conditionText,
-                  { color: colors.conditionText },
-                ]}
-              >
-                {currentItem.condition}
-              </Text>
-            </View>
-          )}
-
-          <Text
-            style={[styles.questionPrompt, { color: colors.secondaryText }]}
-          >
-            Who performs this action?
-          </Text>
-
-          {/* Answer buttons */}
-          <View style={styles.answerButtons}>
-            {options.map((option) => {
-              const isSelected = selectedAnswer === option;
-              const isCorrect = option === currentItem.role;
-
-              let btnBg = colors.optionBg;
-              let btnBorder = colors.optionBorder;
-              let textColor = colors.text;
-
-              if (showResult) {
-                if (isCorrect) {
-                  btnBg = colors.correctBg;
-                  btnBorder = colors.correctBtn;
-                  textColor = colors.correctBtn;
-                } else if (isSelected && !isCorrect) {
-                  btnBg = colors.incorrectBg;
-                  btnBorder = colors.incorrectBtn;
-                  textColor = colors.incorrectBtn;
-                }
-              }
-
-              return (
-                <TouchableOpacity
-                  key={option}
-                  style={[
-                    styles.optionBtn,
-                    {
-                      backgroundColor: btnBg,
-                      borderColor: btnBorder,
-                    },
-                  ]}
-                  onPress={() => handleAnswer(option)}
-                  disabled={showResult}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.optionText, { color: textColor }]}>
-                    {option}
-                  </Text>
-                  <Text
-                    style={[styles.optionDesc, { color: colors.secondaryText }]}
-                  >
-                    {option === "CM1"
-                      ? "Commander"
-                      : option === "CM2"
-                        ? "Co-pilot"
-                        : option === "PF"
-                          ? "Pilot Flying"
-                          : "Pilot Monitoring"}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
           </View>
+        </View>
 
-          {/* Result feedback */}
-          {showResult && (
-            <View style={styles.resultContainer}>
-              <Text
-                style={[
-                  styles.resultText,
+        {/* Question */}
+        <Animated.View
+          key={`q-${qIdx}`}
+          entering={FadeInDown.duration(320).easing(
+            Easing.out(Easing.cubic),
+          )}
+          style={styles.questionBlock}
+        >
+          <Text style={styles.questionAction}>{q.action}</Text>
+          {q.value ? <Text style={styles.questionValue}>{q.value}</Text> : null}
+          {q.condition ? (
+            <View style={styles.conditionBadge}>
+              <Text style={styles.conditionText}>{q.condition}</Text>
+            </View>
+          ) : null}
+          <Text style={styles.prompt}>Who performs this action?</Text>
+        </Animated.View>
+
+        {/* Options */}
+        <View style={styles.options}>
+          {q.options.map((role, i) => {
+            const isSel = selected === role;
+            const isAns = role === q.role;
+            let bg: string = iOS.bgSecondary;
+            let border: string = "transparent";
+            let labelColor: string = iOS.label;
+            let bubbleBg: string = iOS.fill3;
+            let bubbleColor: string = iOS.label;
+            let reveal: "ok" | "no" | null = null;
+
+            if (revealed) {
+              if (isAns) {
+                bg = "rgba(48,209,88,0.15)";
+                border = iOS.green;
+                bubbleBg = iOS.green;
+                bubbleColor = "#fff";
+                reveal = "ok";
+              } else if (isSel) {
+                bg = "rgba(255,69,58,0.12)";
+                border = iOS.red;
+                bubbleBg = iOS.red;
+                bubbleColor = "#fff";
+                reveal = "no";
+              } else {
+                labelColor = iOS.label2;
+              }
+            } else if (isSel) {
+              bg = "rgba(10,132,255,0.15)";
+              border = iOS.blue;
+              bubbleBg = iOS.blue;
+              bubbleColor = "#fff";
+            }
+
+            return (
+              <Pressable
+                key={role}
+                onPress={() => handleSelect(role)}
+                disabled={revealed}
+                style={({ pressed }) => [
+                  styles.option,
                   {
-                    color:
-                      selectedAnswer === currentItem.role
-                        ? colors.correctBtn
-                        : colors.incorrectBtn,
+                    backgroundColor: bg,
+                    borderColor: border,
+                    transform: [
+                      { scale: pressed && !revealed ? 0.98 : 1 },
+                    ],
                   },
                 ]}
               >
-                {selectedAnswer === currentItem.role
-                  ? "Correct!"
-                  : `Incorrect — the answer is ${currentItem.role}`}
-              </Text>
-              <TouchableOpacity
-                style={[styles.nextBtn, { backgroundColor: colors.accent }]}
-                onPress={handleNext}
-              >
-                <Text style={styles.nextBtnText}>Next Question</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+                <View
+                  style={[styles.optionBubble, { backgroundColor: bubbleBg }]}
+                >
+                  <Text
+                    style={[styles.optionBubbleText, { color: bubbleColor }]}
+                  >
+                    {String.fromCharCode(65 + i)}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.optionLabel, { color: labelColor }]}>
+                    {role}
+                  </Text>
+                  <Text style={styles.optionSubtitle}>
+                    {roleDescription(role)}
+                  </Text>
+                </View>
+                {reveal === "ok" && (
+                  <Animated.View entering={ZoomIn.duration(280)}>
+                    <SymbolView
+                      name="checkmark.circle.fill"
+                      size={22}
+                      tintColor={iOS.green}
+                      weight="semibold"
+                      resizeMode="scaleAspectFit"
+                      style={{ width: 22, height: 22 }}
+                    />
+                  </Animated.View>
+                )}
+                {reveal === "no" && (
+                  <Animated.View entering={ZoomIn.duration(280)}>
+                    <SymbolView
+                      name="xmark.circle.fill"
+                      size={22}
+                      tintColor={iOS.red}
+                      weight="semibold"
+                      resizeMode="scaleAspectFit"
+                      style={{ width: 22, height: 22 }}
+                    />
+                  </Animated.View>
+                )}
+              </Pressable>
+            );
+          })}
         </View>
+
+        {/* Explanation */}
+        {revealed && (
+          <Animated.View
+            entering={FadeInUp.duration(260)}
+            style={styles.explanation}
+          >
+            <View style={styles.explanationHeader}>
+              <SymbolView
+                name={
+                  isCorrect
+                    ? ("checkmark.circle.fill" as any)
+                    : ("xmark.circle.fill" as any)
+                }
+                size={18}
+                tintColor={isCorrect ? iOS.green : iOS.red}
+                weight="semibold"
+                resizeMode="scaleAspectFit"
+                style={{ width: 18, height: 18 }}
+              />
+              <Text
+                style={[
+                  styles.explanationTitle,
+                  { color: isCorrect ? iOS.green : iOS.red },
+                ]}
+              >
+                {isCorrect ? "Correct" : "Not quite"}
+              </Text>
+            </View>
+            <Text style={styles.explanationBody}>
+              {isCorrect
+                ? `${q.role} performs this action — ${roleDescription(q.role)}.`
+                : `The correct role is ${q.role} — ${roleDescription(q.role)}.`}
+            </Text>
+          </Animated.View>
+        )}
+      </ScrollView>
+
+      {/* CTA */}
+      <View style={styles.ctaWrap}>
+        {!revealed ? (
+          <Pressable
+            onPress={handleSubmit}
+            disabled={selected === null}
+            style={({ pressed }) => [
+              styles.cta,
+              {
+                backgroundColor: selected !== null ? iOS.blue : iOS.fill3,
+                transform: [
+                  { scale: pressed && selected !== null ? 0.98 : 1 },
+                ],
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.ctaText,
+                { color: selected !== null ? "#fff" : iOS.label3 },
+              ]}
+            >
+              Check Answer
+            </Text>
+          </Pressable>
+        ) : (
+          <Animated.View entering={FadeIn.duration(200)}>
+            <Pressable
+              onPress={handleNext}
+              style={({ pressed }) => [
+                styles.cta,
+                {
+                  backgroundColor: iOS.blue,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                },
+              ]}
+            >
+              <Text style={[styles.ctaText, { color: "#fff" }]}>
+                {qIdx + 1 >= total ? "See Results" : "Next Question"}
+              </Text>
+            </Pressable>
+          </Animated.View>
+        )}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
-const lightColors = {
-  bg: "#f2f2f7",
-  card: "#ffffff",
-  text: "#000000",
-  secondaryText: "#8e8e93",
-  accent: "#007AFF",
-  valueText: "#007AFF",
-  correctBg: "rgba(52, 199, 89, 0.15)",
-  incorrectBg: "rgba(255, 59, 48, 0.15)",
-  correctBtn: "#34C759",
-  incorrectBtn: "#FF3B30",
-  optionBg: "#f2f2f7",
-  optionBorder: "#c6c6c8",
-  progressBg: "#e0e0e0",
-  conditionBg: "#fff3cd",
-  conditionText: "#856404",
-};
+// ───────────── Results Screen ─────────────
+function ResultsScreen({
+  phaseName,
+  answers,
+  onRetry,
+  onHome,
+}: {
+  phaseName: string;
+  answers: boolean[];
+  onRetry: () => void;
+  onHome: () => void;
+}) {
+  const correct = answers.filter(Boolean).length;
+  const total = answers.length;
+  const pct = Math.round((correct / total) * 100);
+  const passed = pct >= 70;
+  const tint = passed ? iOS.green : iOS.orange;
+  const radius = 78;
+  const circumference = 2 * Math.PI * radius;
 
-const darkColors = {
-  bg: "#000000",
-  card: "#1c1c1e",
-  text: "#ffffff",
-  secondaryText: "#8e8e93",
-  accent: "#0A84FF",
-  valueText: "#0A84FF",
-  correctBg: "rgba(48, 209, 88, 0.2)",
-  incorrectBg: "rgba(255, 69, 58, 0.2)",
-  correctBtn: "#30D158",
-  incorrectBtn: "#FF453A",
-  optionBg: "#2c2c2e",
-  optionBorder: "#48484a",
-  progressBg: "#38383a",
-  conditionBg: "#3a3000",
-  conditionText: "#FFD60A",
-};
+  return (
+    <SafeAreaView
+      edges={["top", "bottom"]}
+      style={{ flex: 1, backgroundColor: iOS.bg }}
+    >
+      <View style={styles.resultsTopBar}>
+        <Pressable
+          onPress={onHome}
+          style={({ pressed }) => [
+            styles.closeBtn,
+            pressed && { transform: [{ scale: 0.94 }] },
+          ]}
+          hitSlop={12}
+        >
+          <SymbolView
+            name="xmark"
+            size={12}
+            tintColor={iOS.label}
+            weight="semibold"
+            resizeMode="scaleAspectFit"
+            style={{ width: 12, height: 12 }}
+          />
+        </Pressable>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.resultsScroll}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.ringWrap}>
+          <Svg
+            width={180}
+            height={180}
+            viewBox="0 0 180 180"
+            style={{ transform: [{ rotate: "-90deg" }] }}
+          >
+            <Circle
+              cx={90}
+              cy={90}
+              r={radius}
+              stroke={iOS.fill4}
+              strokeWidth={12}
+              fill="none"
+            />
+            <AnimatedRing
+              radius={radius}
+              circumference={circumference}
+              tint={tint}
+              pct={pct}
+            />
+          </Svg>
+          <View style={styles.ringCenter}>
+            <Text style={styles.ringValue}>{pct}</Text>
+            <Text style={styles.ringUnit}>percent</Text>
+          </View>
+        </View>
+
+        <Animated.Text
+          entering={FadeIn.duration(400).delay(200)}
+          style={styles.resultsTitle}
+        >
+          {passed ? "Nice work!" : "Keep practicing"}
+        </Animated.Text>
+        <Animated.Text
+          entering={FadeIn.duration(400).delay(280)}
+          style={styles.resultsSubtitle}
+        >
+          {correct} of {total} correct · {phaseName}
+        </Animated.Text>
+
+        <View style={styles.answersWrap}>
+          <Text style={styles.answersHeader}>YOUR ANSWERS</Text>
+          <View style={styles.answersGrid}>
+            {answers.map((c, i) => (
+              <Animated.View
+                key={i}
+                entering={FadeIn.duration(240).delay(300 + i * 40)}
+                style={[
+                  styles.answerTile,
+                  {
+                    backgroundColor: c
+                      ? "rgba(48,209,88,0.18)"
+                      : "rgba(255,69,58,0.18)",
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.answerTileText,
+                    { color: c ? iOS.green : iOS.red },
+                  ]}
+                >
+                  {i + 1}
+                </Text>
+              </Animated.View>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      <View style={styles.resultsCtaStack}>
+        <Pressable
+          onPress={onRetry}
+          style={({ pressed }) => [
+            styles.cta,
+            {
+              backgroundColor: iOS.blue,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
+            },
+          ]}
+        >
+          <Text style={[styles.ctaText, { color: "#fff" }]}>Try Again</Text>
+        </Pressable>
+        <Pressable
+          onPress={onHome}
+          style={({ pressed }) => [
+            styles.cta,
+            {
+              backgroundColor: iOS.fill3,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
+            },
+          ]}
+        >
+          <Text style={[styles.ctaText, { color: iOS.label }]}>Done</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function AnimatedRing({
+  radius,
+  circumference,
+  tint,
+  pct,
+}: {
+  radius: number;
+  circumference: number;
+  tint: string;
+  pct: number;
+}) {
+  const offset = useSharedValue(circumference);
+
+  React.useEffect(() => {
+    offset.value = withTiming(circumference * (1 - pct / 100), {
+      duration: 1200,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [pct, circumference, offset]);
+
+  const animatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: offset.value,
+  }));
+
+  return (
+    <AnimatedCircle
+      cx={90}
+      cy={90}
+      r={radius}
+      stroke={tint}
+      strokeWidth={12}
+      strokeLinecap="round"
+      fill="none"
+      strokeDasharray={`${circumference} ${circumference}`}
+      animatedProps={animatedProps}
+    />
+  );
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   centered: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 32,
   },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  emptyText: {
+    color: iOS.label2,
+    fontSize: 16,
   },
-  headerInfo: {
+  topBar: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
+    alignItems: "center",
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 14,
   },
-  questionCounter: {
-    fontSize: 13,
-    fontWeight: "500",
+  closeBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: iOS.fill3,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  scoreText: {
-    fontSize: 13,
-    fontWeight: "600",
+  pillRow: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 4,
   },
-  progressTrack: {
+  pill: {
+    flex: 1,
     height: 4,
     borderRadius: 2,
-    overflow: "hidden",
   },
-  progressFill: {
-    height: "100%",
-    borderRadius: 2,
+  counter: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: iOS.label2,
+    letterSpacing: -0.24,
+    fontVariant: ["tabular-nums"],
+    minWidth: 38,
+    textAlign: "right",
   },
-  cardContainer: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 16,
+  scroll: {
     paddingBottom: 40,
   },
-  questionCard: {
-    borderRadius: 16,
-    padding: 24,
+  chipRow: {
+    paddingHorizontal: 20,
+    paddingBottom: 6,
+    flexDirection: "row",
   },
-  phaseLabel: {
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(10,132,255,0.15)",
+    borderRadius: 100,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  chipDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: iOS.blue,
+  },
+  chipText: {
     fontSize: 13,
     fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 12,
+    color: iOS.blue,
+    letterSpacing: -0.08,
+  },
+  questionBlock: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 8,
   },
   questionAction: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "700",
-    fontFamily: "Menlo",
-    marginBottom: 4,
+    color: iOS.label,
+    letterSpacing: 0.35,
+    lineHeight: 30,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   questionValue: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 8,
+    color: iOS.blue,
+    letterSpacing: -0.3,
+    marginTop: 6,
   },
   conditionBadge: {
     alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: 8,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,214,10,0.18)",
+    marginTop: 10,
   },
   conditionText: {
     fontSize: 12,
     fontWeight: "600",
+    color: iOS.yellow,
+    letterSpacing: -0.08,
   },
-  questionPrompt: {
+  prompt: {
     fontSize: 15,
-    marginTop: 16,
-    marginBottom: 16,
+    color: iOS.label2,
+    letterSpacing: -0.24,
+    marginTop: 14,
   },
-  answerButtons: {
-    gap: 12,
+  options: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    gap: 10,
   },
-  optionBtn: {
+  option: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    gap: 12,
+    gap: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    padding: 15,
   },
-  optionText: {
-    fontSize: 20,
-    fontWeight: "700",
-    width: 44,
-  },
-  optionDesc: {
-    fontSize: 15,
-    flex: 1,
-  },
-  resultContainer: {
-    marginTop: 20,
+  optionBubble: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: "center",
+    justifyContent: "center",
   },
-  resultText: {
+  optionBubbleText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  optionLabel: {
     fontSize: 17,
     fontWeight: "600",
-    marginBottom: 16,
+    letterSpacing: -0.4,
   },
-  nextBtn: {
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 10,
+  optionSubtitle: {
+    fontSize: 13,
+    color: iOS.label2,
+    letterSpacing: -0.08,
+    marginTop: 1,
   },
-  nextBtnText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600",
+  explanation: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 14,
+    backgroundColor: iOS.bgSecondary,
+    borderRadius: 14,
   },
-  finishedTitle: {
-    fontSize: 28,
-    fontWeight: "700",
+  explanationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     marginBottom: 8,
   },
-  finishedScore: {
-    fontSize: 48,
-    fontWeight: "800",
-    marginBottom: 4,
+  explanationTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    letterSpacing: -0.24,
   },
-  finishedPct: {
-    fontSize: 18,
-    marginBottom: 24,
+  explanationBody: {
+    fontSize: 15,
+    color: iOS.label2,
+    letterSpacing: -0.24,
+    lineHeight: 20,
   },
-  finishedBar: {
-    width: "100%",
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#e0e0e0",
-    overflow: "hidden",
-    marginBottom: 32,
+  ctaWrap: {
+    padding: 16,
+    paddingBottom: 8,
   },
-  finishedBarFill: {
-    height: "100%",
-    borderRadius: 4,
+  cta: {
+    height: 52,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  restartBtn: {
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  restartBtnText: {
-    color: "#ffffff",
+  ctaText: {
     fontSize: 17,
     fontWeight: "600",
+    letterSpacing: -0.43,
+  },
+  resultsTopBar: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    paddingHorizontal: 16,
+    paddingTop: 6,
+  },
+  resultsScroll: {
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    flexGrow: 1,
+  },
+  ringWrap: {
+    width: 180,
+    height: 180,
+    marginTop: 20,
+    marginBottom: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ringCenter: {
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ringValue: {
+    fontSize: 54,
+    fontWeight: "700",
+    color: iOS.label,
+    letterSpacing: -1,
+    lineHeight: 54,
+    fontVariant: ["tabular-nums"],
+  },
+  ringUnit: {
+    fontSize: 17,
+    color: iOS.label2,
+    letterSpacing: -0.43,
+    marginTop: 2,
+  },
+  resultsTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: iOS.label,
+    letterSpacing: 0.38,
+    lineHeight: 32,
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  resultsSubtitle: {
+    fontSize: 17,
+    color: iOS.label2,
+    letterSpacing: -0.43,
+    marginBottom: 30,
+    textAlign: "center",
+  },
+  answersWrap: {
+    width: "100%",
+    paddingHorizontal: 0,
+    marginBottom: 18,
+  },
+  answersHeader: {
+    fontSize: 13,
+    color: iOS.label2,
+    letterSpacing: -0.08,
+    paddingHorizontal: 16,
+    paddingBottom: 6,
+  },
+  answersGrid: {
+    backgroundColor: iOS.bgSecondary,
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  answerTile: {
+    width: 36,
+    height: 36,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  answerTileText: {
+    fontSize: 15,
+    fontWeight: "600",
+    fontVariant: ["tabular-nums"],
+  },
+  resultsCtaStack: {
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    gap: 10,
   },
 });

@@ -38,10 +38,10 @@ export default function HomeScreen() {
         </View>
         <View style={styles.cardInfo}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>
-            Task Sharing
+            A350 Quiz
           </Text>
           <Text style={[styles.cardDesc, { color: colors.secondaryText }]}>
-            FCOM crew duties by flight phase — Browse, Practice, Quiz
+            Test your knowledge on flight procedures
           </Text>
         </View>
         <Text style={[styles.chevron, { color: colors.secondaryText }]}>›</Text>

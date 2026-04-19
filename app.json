@@ -1,5 +1,6 @@
 {
   "expo": {
+    "owner": "mmdev13s-organization",
     "name": "UI Playground",
     "slug": "expo-ui-playground",
     "version": "1.0.0",
@@ -11,7 +12,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.betoatexpo.expo-ui-playground",
       "appleTeamId": "T2A8YY9YDW",
-      "icon": "./assets/icon.icon"
+      "icon": "./assets/icon.icon",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -44,6 +48,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e32eb25b-296a-4261-8e5d-62f462f86b5d"
+      }
     }
   }
 }

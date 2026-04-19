@@ -1,48 +1,38 @@
 import { Stack } from "expo-router";
-import { useColorScheme } from "react-native";
 
 export default function TaskSharingLayout() {
-  const rawTheme = useColorScheme();
-  const theme = rawTheme === "dark" ? "dark" : "light";
-
   return (
     <Stack
       screenOptions={{
-        headerTintColor: theme === "dark" ? "white" : "black",
         orientation: "portrait",
+        headerShown: false,
+        contentStyle: { backgroundColor: "#000" },
       }}
     >
-      <Stack.Screen
-        name="index"
-        options={{
-          title: "A350 procedures",
-          headerLargeTitle: true,
-          headerTransparent: true,
-          headerLargeStyle: { backgroundColor: "transparent" },
-          headerBlurEffect:
-            theme === "dark" ? "systemMaterialDark" : "systemMaterialLight",
-        }}
-      />
+      <Stack.Screen name="index" />
       <Stack.Screen
         name="browse"
         options={{
+          headerShown: true,
           title: "Browse",
           headerBackTitle: "Phases",
+          headerTintColor: "#fff",
+          headerStyle: { backgroundColor: "#000" },
         }}
       />
       <Stack.Screen
         name="practice"
         options={{
+          headerShown: true,
           title: "Practice",
           headerBackTitle: "Phases",
+          headerTintColor: "#fff",
+          headerStyle: { backgroundColor: "#000" },
         }}
       />
       <Stack.Screen
         name="quiz"
-        options={{
-          title: "Quiz",
-          headerBackTitle: "Phases",
-        }}
+        options={{ presentation: "modal", animation: "slide_from_bottom" }}
       />
     </Stack>
   );
