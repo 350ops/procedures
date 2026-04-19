@@ -153,63 +153,75 @@ export default function FlightCapacityScreen() {
     );
   }
 
-  const radarSize = Math.max(
-    120,
-    Math.min(layout.w * 0.36, layout.h - 24)
+  const isPortrait = layout.w > 0 && layout.h > layout.w;
+  const radarColW = Math.floor(layout.w * 0.36);
+  const controlsColW = Math.floor(
+    Math.max(150, Math.min(220, layout.w * 0.22))
   );
-  const controlsWidth = Math.max(180, layout.w * 0.22);
-  const ecamWidth = Math.max(
-    220,
-    layout.w - radarSize - controlsWidth - 8
-  );
+  const ecamColW = Math.max(0, layout.w - radarColW - controlsColW);
+  const radarSize = Math.min(radarColW, layout.h);
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar hidden />
       <View style={styles.root} onLayout={onLayout}>
-        <View style={[styles.col, { width: radarSize }]}>
-          {layout.w > 0 && (
-            <Radar
-              size={radarSize}
-              traffic={state.traffic}
-              vors={state.vors}
-              selectedVor={state.verify.vorStation}
-              radarMaxNM={cfg.radarMaxNM}
-              innerRingNM={cfg.innerRingNM}
-              outerRingNM={cfg.outerRingNM}
-              onTrafficPress={onTrafficPress}
-            />
-          )}
-        </View>
-        <View style={[styles.col, { width: controlsWidth }]}>
-          <ControlPanel
-            radioFreq={state.verify.radioFreq}
-            altitude={state.verify.altitude}
-            vorOptions={state.vors}
-            vorSelected={state.verify.vorStation}
-            onAdjustRadio={onAdjustRadio}
-            onAdjustAltitude={onAdjustAltitude}
-            onVerifyRadio={onVerifyRadio}
-            onVerifyAltitude={onVerifyAltitude}
-            onSelectVor={onSelectVor}
-          />
-        </View>
-        <View style={[styles.col, { width: ecamWidth }]}>
-          <EcamPanel
-            clock={clock}
-            masterCaution={state.masterCaution}
-            masterWarning={state.masterWarning}
-            activePage={state.activeEcamPage}
-            pendingEvent={pendingEvent}
-            onPressMasterCaution={onPressMasterCaution}
-            onPressMasterWarning={onPressMasterWarning}
-            onSelectPage={onSelectPage}
-            onClear={onClear}
-            onTakeSnapshot={onTakeSnapshot}
-          />
-        </View>
+        {!isPortrait && layout.w > 0 && (
+          <>
+            <View
+              style={[styles.col, styles.radarCol, { width: radarColW }]}
+            >
+              <Radar
+                size={radarSize}
+                traffic={state.traffic}
+                vors={state.vors}
+                selectedVor={state.verify.vorStation}
+                radarMaxNM={cfg.radarMaxNM}
+                innerRingNM={cfg.innerRingNM}
+                outerRingNM={cfg.outerRingNM}
+                onTrafficPress={onTrafficPress}
+              />
+            </View>
+            <View style={[styles.col, { width: controlsColW }]}>
+              <ControlPanel
+                radioFreq={state.verify.radioFreq}
+                altitude={state.verify.altitude}
+                vorOptions={state.vors}
+                vorSelected={state.verify.vorStation}
+                onAdjustRadio={onAdjustRadio}
+                onAdjustAltitude={onAdjustAltitude}
+                onVerifyRadio={onVerifyRadio}
+                onVerifyAltitude={onVerifyAltitude}
+                onSelectVor={onSelectVor}
+              />
+            </View>
+            <View style={[styles.col, { width: ecamColW }]}>
+              <EcamPanel
+                clock={clock}
+                masterCaution={state.masterCaution}
+                masterWarning={state.masterWarning}
+                activePage={state.activeEcamPage}
+                pendingEvent={pendingEvent}
+                onPressMasterCaution={onPressMasterCaution}
+                onPressMasterWarning={onPressMasterWarning}
+                onSelectPage={onSelectPage}
+                onClear={onClear}
+                onTakeSnapshot={onTakeSnapshot}
+              />
+            </View>
+          </>
+        )}
 
-        {!state.running && !state.finished && (
+        {isPortrait && (
+          <View style={styles.rotateWrap}>
+            <Text style={styles.rotateGlyph}>⟳</Text>
+            <Text style={styles.rotateTitle}>Rotate your device</Text>
+            <Text style={styles.rotateSub}>
+              The Flight Capacity Test runs in landscape.
+            </Text>
+          </View>
+        )}
+
+        {!isPortrait && !state.running && !state.finished && (
           <View style={styles.startOverlay}>
             <Text style={styles.startTitle}>Flight Capacity Test</Text>
             <Text style={styles.startSub}>
@@ -258,6 +270,32 @@ const styles = StyleSheet.create({
   },
   col: {
     backgroundColor: "#000",
+  },
+  radarCol: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rotateWrap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: "#000",
+    paddingHorizontal: 32,
+  },
+  rotateGlyph: {
+    color: "#5eb8ff",
+    fontSize: 52,
+  },
+  rotateTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  rotateSub: {
+    color: "#c7c7cc",
+    fontSize: 14,
+    textAlign: "center",
   },
   closeBtn: {
     position: "absolute",
