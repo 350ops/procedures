@@ -1,4 +1,5 @@
 import { casToTas, isa, tasToCas } from "./atmosphere";
+import { defaultILS } from "./ils";
 import { AircraftState, C, D2R, FT_TO_M, MS_TO_KT } from "./state";
 
 export type Inputs = {
@@ -13,7 +14,8 @@ const clamp = (v: number, lo: number, hi: number) =>
 const TWO_PI = Math.PI * 2;
 const wrap2pi = (x: number) => ((x % TWO_PI) + TWO_PI) % TWO_PI;
 
-const GAMMA_LIMIT = 60 * D2R;
+const GAMMA_UP_LIMIT = 45 * D2R;
+const GAMMA_DOWN_LIMIT = 20 * D2R;
 const STICK_DEADBAND = 0.05;
 
 export function step(
@@ -84,7 +86,10 @@ export function step(
       0,
       1
     );
-    nzCmd = Math.max(nzCmd, turnComp + 0.3 * ramp);
+    nzCmd = Math.max(
+      nzCmd,
+      C.overspeedMinNz + (turnComp - C.overspeedMinNz) * ramp
+    );
   }
   const nz = clamp(nzCmd, C.nzMin, C.nzMax);
 
@@ -117,7 +122,7 @@ export function step(
 
   const vTAS = Math.max(0, s.vTAS + vDot * dt);
   let gamma = s.gamma + gammaDot * dt;
-  gamma = clamp(gamma, -GAMMA_LIMIT, GAMMA_LIMIT);
+  gamma = clamp(gamma, -GAMMA_DOWN_LIMIT, GAMMA_UP_LIMIT);
 
   // Ground reaction logic
   let z = s.z - vTAS * Math.sin(gamma) * dt;
@@ -156,13 +161,25 @@ export function initialState(): AircraftState {
   const altM = C.initAltFt * FT_TO_M;
   const { rho } = isa(altM);
   const vTAS = casToTas(C.initCasKt / 1.94384, rho);
-  // Start the aircraft positioned to smoothly fly the defaultILS (aligned at y=0, starting around x=0, heading 90 degrees)
+  const alongM = C.initDistanceNm * 1852;
+  const crossM = C.initCrossTrackNm * 1852;
+  const forwardNorth = Math.cos(defaultILS.runwayCourseRad);
+  const forwardEast = Math.sin(defaultILS.runwayCourseRad);
+  const rightNorth = -Math.sin(defaultILS.runwayCourseRad);
+  const rightEast = Math.cos(defaultILS.runwayCourseRad);
+
   return {
-    x: 0,
-    y: 0,
+    x:
+      defaultILS.thresholdX_m -
+      forwardNorth * alongM -
+      rightNorth * crossM,
+    y:
+      defaultILS.thresholdY_m -
+      forwardEast * alongM -
+      rightEast * crossM,
     z: -altM,
     vTAS,
-    gamma: -3 * D2R,
+    gamma: C.initGammaDeg * D2R,
     psi: C.initHeadingDeg * D2R,
     phi: 0,
     theta: 1 * D2R,

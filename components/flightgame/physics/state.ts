@@ -53,6 +53,7 @@ export const C = {
   thetaMin: (-15 * Math.PI) / 180, // FCOM: -15° pitch attitude limit
   nzMin: -1.0, // clean FBW
   nzMax: 2.5, // clean 
+  overspeedMinNz: 0.65, // keep some descent authority under high-speed protection
 
   // α-protection
   alphaProtFrac: 0.9, // α_prot ≈ 0.9·α_max
@@ -61,10 +62,13 @@ export const C = {
   vmoBiasRangeKt: 20, // CAS overshoot to ramp full nose-up bias
 
   // Initial condition
-  initAltFt: 3184, // Puts aircraft exactly on 3.0deg glideslope at 10 NM
-  initCasKt: 250,
-  initHeadingDeg: 90,
-  initThrust: 0.25,
+  initAltFt: 3500, // below the glidepath at 15 NM so GS comes alive later
+  initCasKt: 210,
+  initHeadingDeg: 60, // 30° intercept to the 090 localizer
+  initDistanceNm: 15,
+  initCrossTrackNm: -3.5, // south of the localizer
+  initGammaDeg: 0,
+  initThrust: 0.18,
   initMass: 220_000, // kg
 };
 

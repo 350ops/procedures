@@ -10,8 +10,8 @@ export type RunwayILS = {
 };
 
 export const defaultILS: RunwayILS = {
-  thresholdX_m: 18520, // Exactly 10 NM
-  thresholdY_m: 0,
+  thresholdX_m: 0,
+  thresholdY_m: 27780, // 15 NM east of the spawn origin
   runwayCourseRad: Math.PI / 2, // 90°
   thresholdElevation_m: 0,
   glidePathDeg: 3.0,
@@ -19,17 +19,17 @@ export const defaultILS: RunwayILS = {
 };
 
 export function runwayFrame(ac: AircraftState, ils: RunwayILS) {
-  const dx = ils.thresholdX_m - ac.x;
-  const dy = ils.thresholdY_m - ac.y;
+  const dNorth = ils.thresholdX_m - ac.x;
+  const dEast = ils.thresholdY_m - ac.y;
 
-  const dirX = Math.sin(ils.runwayCourseRad);
-  const dirY = Math.cos(ils.runwayCourseRad);
+  const forwardNorth = Math.cos(ils.runwayCourseRad);
+  const forwardEast = Math.sin(ils.runwayCourseRad);
 
-  const rightX = Math.cos(ils.runwayCourseRad);
-  const rightY = -Math.sin(ils.runwayCourseRad);
+  const rightNorth = -Math.sin(ils.runwayCourseRad);
+  const rightEast = Math.cos(ils.runwayCourseRad);
 
-  const along_m = dx * dirX + dy * dirY;
-  const cross_m = dx * rightX + dy * rightY; // Positive = runway is to the right
+  const along_m = dNorth * forwardNorth + dEast * forwardEast;
+  const cross_m = dNorth * rightNorth + dEast * rightEast; // Positive = runway is to the right
 
   return { along_m, cross_m };
 }

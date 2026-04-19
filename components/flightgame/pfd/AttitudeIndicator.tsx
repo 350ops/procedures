@@ -162,18 +162,18 @@ export default function AttitudeIndicator({
         <View style={[styles.ilsDot, { left: width / 2 - locHalfW / 2, top: locY }]} />
         <View style={[styles.ilsDot, { left: width / 2 + locHalfW / 2, top: locY }]} />
         <View style={[styles.ilsDot, { left: width / 2 + locHalfW, top: locY }]} />
-        {locNorm !== undefined && (
+        {locValid !== false && locNorm !== undefined && (
           <View style={[styles.locDiamond, { left: locX, top: locY }]} />
         )}
       </View>
 
       {/* GS Scale and Diamond */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <View style={[styles.ilsDot, { top: gsCenterY - gsHalfH, left: gsX }]} />
-        <View style={[styles.ilsDot, { top: gsCenterY - gsHalfH / 2, left: gsX }]} />
-        <View style={[styles.ilsDot, { top: gsCenterY + gsHalfH / 2, left: gsX }]} />
-        <View style={[styles.ilsDot, { top: gsCenterY + gsHalfH, left: gsX }]} />
-        {gsNorm !== undefined && (
+        {gsValid !== false && <View style={[styles.ilsDot, { top: gsCenterY - gsHalfH, left: gsX }]} />}
+        {gsValid !== false && <View style={[styles.ilsDot, { top: gsCenterY - gsHalfH / 2, left: gsX }]} />}
+        {gsValid !== false && <View style={[styles.ilsDot, { top: gsCenterY + gsHalfH / 2, left: gsX }]} />}
+        {gsValid !== false && <View style={[styles.ilsDot, { top: gsCenterY + gsHalfH, left: gsX }]} />}
+        {gsValid !== false && gsNorm !== undefined && (
           <View style={[styles.gsDiamond, { top: gsY, left: gsX }]} />
         )}
       </View>

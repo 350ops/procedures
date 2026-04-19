@@ -14,6 +14,9 @@ import { useRouter } from "expo-router";
 import Sidestick, {
   type SidestickValue,
 } from "@/components/flightgame/controls/Sidestick";
+import NavigationDisplay, {
+  type NavigationDisplayData,
+} from "@/components/flightgame/nd/NavigationDisplay";
 import ThrustLever from "@/components/flightgame/controls/ThrustLever";
 import PFD, { type PFDData } from "@/components/flightgame/pfd/PFD";
 import { useGameLoop } from "@/components/flightgame/useGameLoop";
@@ -23,7 +26,12 @@ import {
   isStalled,
   step,
 } from "@/components/flightgame/physics/integrator";
-import { computeILSAndBird, defaultILS } from "@/components/flightgame/physics/ils";
+import {
+  computeILSAndBird,
+  defaultILS,
+  normalize180,
+  runwayFrame,
+} from "@/components/flightgame/physics/ils";
 import type { AircraftState } from "@/components/flightgame/physics/state";
 import {
   C,
@@ -41,8 +49,11 @@ function toPFDData(s: AircraftState): PFDData {
   const vCAS = tasToCas(s.vTAS, rho);
   const vsMs = s.vTAS * Math.sin(s.gamma);
   
-  // Note: ILS course is 90 degrees logic (Math.PI/2)
-  const ilsData = computeILSAndBird(s, defaultILS, defaultILS.runwayCourseRad);
+  const ilsData = computeILSAndBird(
+    s,
+    defaultILS,
+    defaultILS.runwayCourseRad * R2D
+  );
 
   return {
     iasKt: vCAS * MS_TO_KT,
@@ -58,6 +69,21 @@ function toPFDData(s: AircraftState): PFDData {
   };
 }
 
+function toNavigationData(s: AircraftState): NavigationDisplayData {
+  const { along_m, cross_m } = runwayFrame(s, defaultILS);
+
+  return {
+    along_m,
+    cross_m,
+    headingErrorDeg: normalize180(
+      s.psi * R2D - defaultILS.runwayCourseRad * R2D
+    ),
+    ilsDmeNm:
+      Math.hypot(defaultILS.thresholdX_m - s.x, defaultILS.thresholdY_m - s.y, -s.z) /
+      1852,
+  };
+}
+
 export default function FlightGameScreen() {
   const router = useRouter();
   const [layout, setLayout] = useState({ w: 0, h: 0 });
@@ -69,6 +95,9 @@ export default function FlightGameScreen() {
 
   const [pfdData, setPfdData] = useState<PFDData>(() =>
     toPFDData(stateRef.current)
+  );
+  const [navData, setNavData] = useState<NavigationDisplayData>(() =>
+    toNavigationData(stateRef.current)
   );
 
   const onStickChange = useCallback((v: SidestickValue) => {
@@ -93,6 +122,7 @@ export default function FlightGameScreen() {
       frameCountRef.current = (frameCountRef.current + 1) % HUD_EVERY_N_FRAMES;
       if (frameCountRef.current === 0) {
         setPfdData(toPFDData(stateRef.current));
+        setNavData(toNavigationData(stateRef.current));
       }
     }, [])
   );
@@ -106,6 +136,7 @@ export default function FlightGameScreen() {
     stateRef.current = initialState();
     thrustRef.current = C.initThrust;
     setPfdData(toPFDData(stateRef.current));
+    setNavData(toNavigationData(stateRef.current));
   }, []);
 
   const onRootLayout = (e: LayoutChangeEvent) => {
@@ -125,14 +156,24 @@ export default function FlightGameScreen() {
   const portraitControlsHeight = portraitContentH / 6;
 
   const landscapeSideWidth = Math.max(innerW * 0.15, 100);
-  const landscapePfdWidth = Math.max(
+  const landscapeInstrumentWidth = Math.max(
     0,
     innerW - landscapeSideWidth * 2 - GAP * 2
   );
   const landscapeHeight = innerH;
+  const ndWidth = Math.max(
+    Math.min(landscapeInstrumentWidth * 0.34, 340),
+    220
+  );
+  const pfdWidth = Math.max(landscapeInstrumentWidth - ndWidth - GAP, 0);
 
   const leverWidth = 100;
   const stickZone = Math.max(innerW * 0.3, innerH * 0.2);
+  const portraitNdHeight = Math.min(innerH * 0.24, 220);
+  const portraitPfdBodyHeight = Math.max(
+    portraitPfdHeight - portraitNdHeight - GAP,
+    0
+  );
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -148,10 +189,21 @@ export default function FlightGameScreen() {
                 initial={C.initThrust}
               />
             </View>
-            <View style={[styles.pfdArea, { width: landscapePfdWidth, height: landscapeHeight }]}>
-              {landscapePfdWidth > 0 && (
-                <PFD width={landscapePfdWidth} height={landscapeHeight} data={pfdData} />
-              )}
+            <View style={[styles.instrumentDeck, { width: landscapeInstrumentWidth, height: landscapeHeight }]}>
+              <View style={[styles.navArea, { width: ndWidth, height: landscapeHeight }]}>
+                {ndWidth > 0 && (
+                  <NavigationDisplay
+                    width={ndWidth}
+                    height={landscapeHeight}
+                    data={navData}
+                  />
+                )}
+              </View>
+              <View style={[styles.pfdArea, { width: pfdWidth, height: landscapeHeight }]}>
+                {pfdWidth > 0 && (
+                  <PFD width={pfdWidth} height={landscapeHeight} data={pfdData} />
+                )}
+              </View>
             </View>
             <View style={[styles.landscapeSide, { width: landscapeSideWidth, height: landscapeHeight }]}>
               <Sidestick
@@ -162,8 +214,21 @@ export default function FlightGameScreen() {
           </View>
         ) : (
           <View style={styles.portraitRoot}>
-            <View style={[styles.pfdArea, { width: innerW, height: portraitPfdHeight }]}>
-              {innerW > 0 && <PFD width={innerW} height={portraitPfdHeight} data={pfdData} />}
+            <View style={[styles.instrumentStack, { width: innerW, height: portraitPfdHeight }]}>
+              <View style={[styles.navArea, { width: innerW, height: portraitNdHeight }]}>
+                {innerW > 0 && (
+                  <NavigationDisplay
+                    width={innerW}
+                    height={portraitNdHeight}
+                    data={navData}
+                  />
+                )}
+              </View>
+              <View style={[styles.pfdArea, { width: innerW, height: portraitPfdBodyHeight }]}>
+                {innerW > 0 && (
+                  <PFD width={innerW} height={portraitPfdBodyHeight} data={pfdData} />
+                )}
+              </View>
             </View>
             <View style={[styles.controlsLayer, { height: portraitControlsHeight }]}>
               <View style={[styles.leverCol, { width: leverWidth }]}>
@@ -218,6 +283,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
   },
+  instrumentDeck: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  instrumentStack: {
+    flexDirection: "column",
+    gap: 10,
+  },
   landscapeSide: {
     alignItems: "center",
     justifyContent: "center",
@@ -249,6 +322,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 24,
     elevation: 14,
+    overflow: "hidden",
+  },
+  navArea: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#05080c",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "rgba(120,180,220,0.15)",
+    shadowColor: "#4aa6ff",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.24,
+    shadowRadius: 24,
+    elevation: 12,
     overflow: "hidden",
   },
   controlsLayer: {
