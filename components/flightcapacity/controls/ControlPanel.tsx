@@ -197,8 +197,9 @@ function MenuItem({
 
 const styles = StyleSheet.create({
   panel: {
-    flex: 1,
-    paddingHorizontal: 14,
+    width: "100%",
+    maxWidth: 360,
+    paddingHorizontal: 18,
     paddingVertical: 18,
     backgroundColor: "#7c8fa5",
   },

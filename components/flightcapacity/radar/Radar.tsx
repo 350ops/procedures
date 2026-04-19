@@ -274,6 +274,7 @@ const styles = StyleSheet.create({
   ownshipGlyph: {
     color: "#5eb8ff",
     fontSize: 20,
+    transform: [{ rotate: "-45deg" }],
   },
   vor: {
     position: "absolute",

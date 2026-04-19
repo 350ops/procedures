@@ -154,10 +154,8 @@ export default function FlightCapacityScreen() {
   }
 
   const isPortrait = layout.w > 0 && layout.h > layout.w;
-  const radarColW = Math.floor(layout.w * 0.36);
-  const controlsColW = Math.floor(
-    Math.max(150, Math.min(220, layout.w * 0.22))
-  );
+  const radarColW = Math.floor(Math.min(layout.h, layout.w * 0.3));
+  const controlsColW = Math.floor(layout.w * 0.34);
   const ecamColW = Math.max(0, layout.w - radarColW - controlsColW);
   const radarSize = Math.min(radarColW, layout.h);
 
@@ -181,7 +179,7 @@ export default function FlightCapacityScreen() {
                 onTrafficPress={onTrafficPress}
               />
             </View>
-            <View style={[styles.col, { width: controlsColW }]}>
+            <View style={[styles.col, styles.controlsCol, { width: controlsColW }]}>
               <ControlPanel
                 radioFreq={state.verify.radioFreq}
                 altitude={state.verify.altitude}
@@ -272,6 +270,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
   },
   radarCol: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  controlsCol: {
     alignItems: "center",
     justifyContent: "center",
   },
