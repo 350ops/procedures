@@ -16,7 +16,7 @@ function fpmToUnit(fpm: number): number {
   const a = Math.abs(fpm);
   if (a <= 2000) return s * (a / 2000) * 0.6;
   const extra = Math.min(1, (a - 2000) / (MAX_FPM - 2000));
-  return s * (0.6 + extra * 0.4);
+  return s * (0.6 + extra * 0.);
 }
 
 export default function VSI({ vsFpm, width, height }: Props) {
@@ -66,7 +66,7 @@ export default function VSI({ vsFpm, width, height }: Props) {
 const styles = StyleSheet.create({
   wrap: {
     overflow: "hidden",
-    backgroundColor: "rgba(0,0,0,0.55)",
+    backgroundColor: "rgba(65,70,100,0.85)",
     borderLeftWidth: 1,
     borderLeftColor: "rgba(255,255,255,0.2)",
   },

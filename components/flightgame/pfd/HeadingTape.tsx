@@ -66,12 +66,8 @@ export default function HeadingTape({ headingDeg, width, height }: Props) {
       </View>
 
       <View style={styles.center} pointerEvents="none">
-        <View style={styles.readout}>
-          <Text style={styles.readoutText}>
-            {Math.round(hdg).toString().padStart(3, "0")}
-          </Text>
-        </View>
-        <View style={styles.pointer} />
+        <View style={styles.diamond} />
+        <View style={styles.pointerLine} />
       </View>
     </View>
   );
@@ -80,9 +76,9 @@ export default function HeadingTape({ headingDeg, width, height }: Props) {
 const styles = StyleSheet.create({
   wrap: {
     overflow: "hidden",
-    backgroundColor: "rgba(0,0,0,0.55)",
+    backgroundColor: "rgba(65,70,100,0.85)",
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.2)",
+    borderTopColor: "#ffffff",
   },
   track: {
     position: "absolute",
@@ -117,34 +113,23 @@ const styles = StyleSheet.create({
   },
   center: {
     position: "absolute",
-    top: 0,
+    top: -10,
     left: "50%",
     alignItems: "center",
     width: 40,
     marginLeft: -20,
   },
-  readout: {
-    backgroundColor: "#000",
-    borderWidth: 1,
-    borderColor: "#ffe600",
-    paddingHorizontal: 4,
-    paddingVertical: 1,
+  diamond: {
+    width: 12,
+    height: 12,
+    borderWidth: 2,
+    borderColor: "#00ff00",
+    transform: [{ rotate: "45deg" }],
+    marginBottom: -4,
   },
-  readoutText: {
-    color: "#ffe600",
-    fontSize: 14,
-    fontWeight: "800",
-    fontFamily: "Courier",
-  },
-  pointer: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 5,
-    borderRightWidth: 5,
-    borderTopWidth: 6,
-    borderLeftColor: "transparent",
-    borderRightColor: "transparent",
-    borderTopColor: "#ffe600",
-    marginTop: -1,
+  pointerLine: {
+    width: 4,
+    height: 38,
+    backgroundColor: "#ffe600",
   },
 });

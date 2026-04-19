@@ -32,17 +32,17 @@ export default function AltitudeTape({ altFt, width, height }: Props) {
               key={v}
               style={[styles.tickRow, { top: height / 2 - offset - 8 }]}
             >
-              {isLabel && (
-                <Text style={styles.label}>
-                  {v.toString().padStart(5, " ")}
-                </Text>
-              )}
               <View
                 style={[
                   styles.tick,
                   { width: isLabel ? 10 : 6 },
                 ]}
               />
+              {isLabel && (
+                <Text style={styles.label}>
+                  {v.toString().padStart(3, "0")}
+                </Text>
+              )}
             </View>
           );
         })}
@@ -61,9 +61,7 @@ export default function AltitudeTape({ altFt, width, height }: Props) {
 const styles = StyleSheet.create({
   wrap: {
     overflow: "hidden",
-    backgroundColor: "rgba(0,0,0,0.55)",
-    borderLeftWidth: 1,
-    borderLeftColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(65,70,100,0.85)",
   },
   track: {
     position: "absolute",
@@ -79,12 +77,12 @@ const styles = StyleSheet.create({
     height: 16,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-end",
+    justifyContent: "flex-start",
   },
   tick: {
     height: 2,
     backgroundColor: "#ffffff",
-    marginLeft: 4,
+    marginRight: 4,
   },
   label: {
     color: "#ffffff",
@@ -96,17 +94,17 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: "50%",
     left: 0,
-    marginTop: -12,
+    marginTop: -16,
   },
   readout: {
     backgroundColor: "#000",
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: "#ffe600",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
   readoutText: {
-    color: "#ffe600",
+    color: "#00ff00",
     fontSize: 16,
     fontWeight: "800",
     fontFamily: "Courier",

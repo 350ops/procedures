@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import { PanResponder, StyleSheet, View } from "react-native";
+import { PanResponder, StyleSheet, View, Image } from "react-native";
 
 type Props = {
   width: number;
@@ -61,7 +61,12 @@ export default function ThrustLever({
         />
       ))}
       <View style={[styles.lever, { top: leverY }]}>
-        <View style={styles.leverHandle} />
+        <View style={styles.leverHandle}>
+          <Image
+            source={require("@/components/flightgame/controls/thrust.png")}
+            style={{ width: "100%", height: "100%", resizeMode: "contain" }}
+          />
+        </View>
       </View>
     </View>
   );
@@ -96,11 +101,9 @@ const styles = StyleSheet.create({
     height: 56,
   },
   leverHandle: {
-    width: 54,
-    height: 26,
-    borderRadius: 6,
-    backgroundColor: "#ffb300",
-    borderWidth: 2,
-    borderColor: "#3d2a00",
+    width: 80,
+    height: 80,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

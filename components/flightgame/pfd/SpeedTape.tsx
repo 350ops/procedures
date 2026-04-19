@@ -39,20 +39,23 @@ export default function SpeedTape({ iasKt, width, height }: Props) {
                 },
               ]}
             >
+              {isLabel && <Text style={styles.label}>{v.toString().padStart(3, "0")}</Text>}
               <View
                 style={[
                   styles.tick,
                   { width: isLabel ? 10 : 6 },
                 ]}
               />
-              {isLabel && <Text style={styles.label}>{v}</Text>}
             </View>
           );
         })}
       </View>
       <View style={styles.center} pointerEvents="none">
-        <View style={styles.readout}>
-          <Text style={styles.readoutText}>{Math.round(ias)}</Text>
+        <View style={styles.readoutWrapper}>
+          <View style={styles.readout}>
+            <Text style={styles.readoutText}>{Math.round(ias).toString().padStart(3, "0")}</Text>
+          </View>
+          <View style={styles.pointer} />
         </View>
       </View>
     </View>
@@ -62,9 +65,7 @@ export default function SpeedTape({ iasKt, width, height }: Props) {
 const styles = StyleSheet.create({
   wrap: {
     overflow: "hidden",
-    backgroundColor: "rgba(0,0,0,0.55)",
-    borderRightWidth: 1,
-    borderRightColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(65,70,100,0.85)",
   },
   track: {
     position: "absolute",
@@ -80,11 +81,12 @@ const styles = StyleSheet.create({
     height: 16,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "flex-end",
   },
   tick: {
     height: 2,
     backgroundColor: "#ffffff",
-    marginLeft: 0,
+    marginLeft: 4,
   },
   label: {
     marginLeft: 4,
@@ -97,19 +99,33 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: "50%",
     right: 0,
-    marginTop: -12,
+    marginTop: -16,
+  },
+  readoutWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   readout: {
     backgroundColor: "#000",
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: "#ffe600",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
   readoutText: {
-    color: "#ffe600",
+    color: "#00ff00",
     fontSize: 16,
     fontWeight: "800",
     fontFamily: "Courier",
+  },
+  pointer: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 6,
+    borderBottomWidth: 6,
+    borderLeftWidth: 8,
+    borderTopColor: "transparent",
+    borderBottomColor: "transparent",
+    borderLeftColor: "#ffe600",
   },
 });

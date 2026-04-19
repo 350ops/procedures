@@ -51,8 +51,8 @@ export const C = {
   // Pitch / load-factor law
   thetaMax: (30 * Math.PI) / 180, // FCOM: +30° pitch attitude limit
   thetaMin: (-15 * Math.PI) / 180, // FCOM: -15° pitch attitude limit
-  nzMin: 0.0, // clean (high-lift would be 1.0)
-  nzMax: 2.5, // clean (high-lift would be 2.0)
+  nzMin: -1.0, // clean FBW
+  nzMax: 2.5, // clean 
 
   // α-protection
   alphaProtFrac: 0.9, // α_prot ≈ 0.9·α_max
@@ -61,7 +61,7 @@ export const C = {
   vmoBiasRangeKt: 20, // CAS overshoot to ramp full nose-up bias
 
   // Initial condition
-  initAltFt: 5000,
+  initAltFt: 3184, // Puts aircraft exactly on 3.0deg glideslope at 10 NM
   initCasKt: 250,
   initHeadingDeg: 90,
   initThrust: 0.25,

@@ -91,10 +91,19 @@ export function step(
   // Required CL at current q, with α-max clamp (= stall protection).
   const qS = 0.5 * rho * v * v * C.S;
   const liftNeeded = nz * s.mass * C.g;
-  let CL = liftNeeded / Math.max(qS, 1);
-  if (CL > C.CLmax) CL = C.CLmax;
+  let targetCL = liftNeeded / Math.max(qS, 1);
+  if (targetCL > C.CLmax) targetCL = C.CLmax;
+  
+  const targetAlpha = C.alpha0 + targetCL / C.CLalpha;
+
+  // Airbus FBW / pitch inertia simulation: smooth alpha transitions so attitude doesn't snap abruptly
+  const tauPitch = 0.5;
+  const alphaLagAlpha = 1 - Math.exp(-dt / tauPitch);
+  const alpha = s.alpha + (targetAlpha - s.alpha) * alphaLagAlpha;
+
+  // Re-derive CL from the smoothed alpha for exact lift calculation
+  const CL = (alpha - C.alpha0) * C.CLalpha;
   const L = CL * qS;
-  const alpha = C.alpha0 + CL / C.CLalpha;
 
   // Drag polar.
   const CD = C.CD0 + C.k * CL * CL;
@@ -110,6 +119,13 @@ export function step(
   let gamma = s.gamma + gammaDot * dt;
   gamma = clamp(gamma, -GAMMA_LIMIT, GAMMA_LIMIT);
 
+  // Ground reaction logic
+  let z = s.z - vTAS * Math.sin(gamma) * dt;
+  if (z >= 0) {
+    z = 0;
+    if (gamma < 0) gamma = 0;
+  }
+
   // Attitude.
   let theta = gamma + alpha;
   theta = clamp(theta, C.thetaMin, C.thetaMax);
@@ -117,11 +133,8 @@ export function step(
   // NED position integration.
   const vN = vTAS * Math.cos(gamma) * Math.cos(psi);
   const vE = vTAS * Math.cos(gamma) * Math.sin(psi);
-  const vD = -vTAS * Math.sin(gamma);
   const x = s.x + vN * dt;
   const y = s.y + vE * dt;
-  let z = s.z + vD * dt;
-  if (z > 0) z = 0;
 
   return {
     x,
@@ -143,15 +156,16 @@ export function initialState(): AircraftState {
   const altM = C.initAltFt * FT_TO_M;
   const { rho } = isa(altM);
   const vTAS = casToTas(C.initCasKt / 1.94384, rho);
+  // Start the aircraft positioned to smoothly fly the defaultILS (aligned at y=0, starting around x=0, heading 90 degrees)
   return {
     x: 0,
     y: 0,
     z: -altM,
     vTAS,
-    gamma: 0,
+    gamma: -3 * D2R,
     psi: C.initHeadingDeg * D2R,
     phi: 0,
-    theta: 0,
+    theta: 1 * D2R,
     alpha: 0,
     mass: C.initMass,
     thrustCmd: C.initThrust,

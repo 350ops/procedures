@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import { PanResponder, StyleSheet, View } from "react-native";
+import { PanResponder, StyleSheet, View, Image } from "react-native";
 
 export type SidestickValue = {
   x: number;
@@ -70,7 +70,12 @@ export default function Sidestick({ size, onChange }: Props) {
           styles.knob,
           { transform: [{ translateX: knobX }, { translateY: knobY }] },
         ]}
-      />
+      >
+        <Image
+          source={require("@/components/flightgame/controls/sidestick.png")}
+          style={{ width: "100%", height: "100%", resizeMode: "contain" }}
+        />
+      </View>
     </View>
   );
 }
@@ -102,11 +107,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.15)",
   },
   knob: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#00e676",
-    borderWidth: 2,
-    borderColor: "#003d1f",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
