@@ -3,7 +3,7 @@
     "name": "UI Playground",
     "slug": "expo-ui-playground",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "scheme": "expouiplayground",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
