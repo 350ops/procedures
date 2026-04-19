@@ -9,6 +9,7 @@ export default function TaskSharingLayout() {
     <Stack
       screenOptions={{
         headerTintColor: theme === "dark" ? "white" : "black",
+        orientation: "portrait",
       }}
     >
       <Stack.Screen

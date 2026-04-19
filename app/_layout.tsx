@@ -6,6 +6,7 @@ export default function RootLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="tasksharing" />
       <Stack.Screen name="flightgame" options={{ gestureEnabled: false }} />
+      <Stack.Screen name="flightcapacity" />
     </Stack>
   );
 }

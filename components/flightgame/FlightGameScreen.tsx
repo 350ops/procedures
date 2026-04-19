@@ -113,16 +113,26 @@ export default function FlightGameScreen() {
     setLayout({ w: width, h: height });
   };
 
-  const isLandscape = layout.w > layout.h;
-  const portraitPfdHeight = layout.h * (5 / 6);
-  const portraitControlsHeight = layout.h / 6;
+  const PAD = 10;
+  const GAP = 10;
+  const innerW = Math.max(0, layout.w - PAD * 2);
+  const innerH = Math.max(0, layout.h - PAD * 2);
 
-  const landscapeSideWidth = Math.max(layout.w * 0.15, 100);
-  const landscapePfdWidth = layout.w - landscapeSideWidth * 2;
+  const isLandscape = innerW > innerH;
+
+  const portraitContentH = Math.max(0, innerH - GAP);
+  const portraitPfdHeight = portraitContentH * (5 / 6);
+  const portraitControlsHeight = portraitContentH / 6;
+
+  const landscapeSideWidth = Math.max(innerW * 0.15, 100);
+  const landscapePfdWidth = Math.max(
+    0,
+    innerW - landscapeSideWidth * 2 - GAP * 2
+  );
+  const landscapeHeight = innerH;
 
   const leverWidth = 100;
-  const stickZone = Math.max(layout.w * 0.3, layout.h * 0.2);
-  const s = stateRef.current;
+  const stickZone = Math.max(innerW * 0.3, innerH * 0.2);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -130,28 +140,30 @@ export default function FlightGameScreen() {
       <View style={styles.root} onLayout={onRootLayout}>
         {isLandscape ? (
           <View style={styles.landscapeRoot}>
-            <View style={[styles.landscapeSide, { width: landscapeSideWidth }]}>
+            <View style={[styles.landscapeSide, { width: landscapeSideWidth, height: landscapeHeight }]}>
               <ThrustLever
                 width={landscapeSideWidth}
-                height={layout.h * 0.8}
+                height={landscapeHeight * 0.8}
                 onChange={onThrustChange}
                 initial={C.initThrust}
               />
             </View>
-            <View style={[styles.pfdArea, { width: landscapePfdWidth, height: layout.h }]}>
-              {layout.w > 0 && <PFD width={landscapePfdWidth} height={layout.h} data={pfdData} />}
+            <View style={[styles.pfdArea, { width: landscapePfdWidth, height: landscapeHeight }]}>
+              {landscapePfdWidth > 0 && (
+                <PFD width={landscapePfdWidth} height={landscapeHeight} data={pfdData} />
+              )}
             </View>
-            <View style={[styles.landscapeSide, { width: landscapeSideWidth }]}>
+            <View style={[styles.landscapeSide, { width: landscapeSideWidth, height: landscapeHeight }]}>
               <Sidestick
-                size={Math.min(landscapeSideWidth, layout.h * 0.8)}
+                size={Math.min(landscapeSideWidth, landscapeHeight * 0.8)}
                 onChange={onStickChange}
               />
             </View>
           </View>
         ) : (
           <View style={styles.portraitRoot}>
-            <View style={[styles.pfdArea, { height: portraitPfdHeight }]}>
-              {layout.w > 0 && <PFD width={layout.w} height={portraitPfdHeight} data={pfdData} />}
+            <View style={[styles.pfdArea, { width: innerW, height: portraitPfdHeight }]}>
+              {innerW > 0 && <PFD width={innerW} height={portraitPfdHeight} data={pfdData} />}
             </View>
             <View style={[styles.controlsLayer, { height: portraitControlsHeight }]}>
               <View style={[styles.leverCol, { width: leverWidth }]}>
@@ -186,39 +198,6 @@ export default function FlightGameScreen() {
             <Text style={styles.iconText}>✕</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Live Debug Navigation Display */}
-        <View style={styles.navMap} pointerEvents="none">
-          {/* Runway */}
-          <View style={{
-            position: "absolute",
-            left: (defaultILS.thresholdX_m / 25000) * 200,
-            top: 75 - (defaultILS.thresholdY_m / 25000) * 150,
-            width: 8, height: 8, backgroundColor: "lime", borderRadius: 4, marginLeft: -4, marginTop: -4
-          }} />
-          {/* Aircraft */}
-          <View style={{
-            position: "absolute",
-            left: (s.x / 25000) * 200,
-            top: 75 - (s.y / 25000) * 150,
-            width: 6, height: 6, backgroundColor: "red", borderRadius: 3, marginLeft: -3, marginTop: -3
-          }} />
-          {/* Heading Line */}
-           <View style={{
-            position: "absolute",
-            left: (s.x / 25000) * 200,
-            top: 75 - (s.y / 25000) * 150,
-            width: 10, height: 10,
-            transform: [
-              { rotate: `${s.psi}rad` },
-              { translateY: -10 }
-            ],
-            justifyContent: 'flex-start',
-            alignItems: 'center'
-          }}>
-            <View style={{ width: 2, height: 10, backgroundColor: "red" }} />
-          </View>
-        </View>
       </View>
     </SafeAreaView>
   );
@@ -227,41 +206,65 @@ export default function FlightGameScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "#05080c",
   },
   root: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "#05080c",
+    padding: 10,
   },
   landscapeRoot: {
     flex: 1,
     flexDirection: "row",
+    gap: 10,
   },
   landscapeSide: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#111",
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderLeftWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(18,24,34,0.75)",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "rgba(120,180,220,0.12)",
+    shadowColor: "#4aa6ff",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    elevation: 10,
+    overflow: "hidden",
   },
   portraitRoot: {
     flex: 1,
     flexDirection: "column",
+    gap: 10,
   },
   pfdArea: {
-    width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#000",
+    backgroundColor: "#05080c",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "rgba(120,180,220,0.15)",
+    shadowColor: "#4aa6ff",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 14,
+    overflow: "hidden",
   },
   controlsLayer: {
     width: "100%",
     flexDirection: "row",
     alignItems: "stretch",
-    backgroundColor: "#111",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(18,24,34,0.75)",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "rgba(120,180,220,0.12)",
+    shadowColor: "#4aa6ff",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    elevation: 10,
+    overflow: "hidden",
   },
   spacer: {
     flex: 1,
@@ -270,13 +273,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: "rgba(255,255,255,0.1)",
+    borderRightColor: "rgba(255,255,255,0.08)",
   },
   stickCol: {
     alignItems: "center",
     justifyContent: "center",
     borderLeftWidth: StyleSheet.hairlineWidth,
-    borderLeftColor: "rgba(255,255,255,0.1)",
+    borderLeftColor: "rgba(255,255,255,0.08)",
   },
   colLabel: {
     position: "absolute",
@@ -287,34 +290,29 @@ const styles = StyleSheet.create({
   },
   topRightCol: {
     position: "absolute",
-    top: 8,
-    right: 12,
+    top: 16,
+    right: 20,
     flexDirection: "row",
-    gap: 8,
+    gap: 10,
   },
   iconBtn: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 16,
+    backgroundColor: "rgba(20,28,40,0.72)",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(120,180,220,0.22)",
+    shadowColor: "#4aa6ff",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
   },
   iconText: {
-    color: "#fff",
+    color: "#e6f1ff",
     fontSize: 18,
     fontWeight: "bold",
   },
-  navMap: {
-    position: 'absolute',
-    top: 20,
-    left: '50%',
-    marginLeft: -100,
-    width: 200,
-    height: 150,
-    backgroundColor: 'rgba(0,20,0,0.8)',
-    borderWidth: 1,
-    borderColor: 'green',
-    overflow: 'hidden',
-  }
 });
