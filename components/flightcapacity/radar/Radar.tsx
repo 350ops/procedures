@@ -197,10 +197,12 @@ export default function Radar({
           })}
 
         <View
-          style={[styles.ownship, { left: cx - 12, top: cy - 12 }]}
+          style={[styles.ownship, { left: cx - 14, top: cy - 14 }]}
           pointerEvents="none"
         >
-          <Text style={styles.ownshipGlyph}>✈</Text>
+          <View style={styles.ownshipFuselage} />
+          <View style={styles.ownshipWings} />
+          <View style={styles.ownshipTail} />
         </View>
       </View>
     </View>
@@ -266,15 +268,35 @@ const styles = StyleSheet.create({
   },
   ownship: {
     position: "absolute",
-    width: 24,
-    height: 24,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 28,
+    height: 28,
   },
-  ownshipGlyph: {
-    color: "#5eb8ff",
-    fontSize: 20,
-    transform: [{ rotate: "-45deg" }],
+  ownshipFuselage: {
+    position: "absolute",
+    left: 13,
+    top: 2,
+    width: 2,
+    height: 24,
+    backgroundColor: "#5eb8ff",
+    borderRadius: 1,
+  },
+  ownshipWings: {
+    position: "absolute",
+    left: 2,
+    top: 13,
+    width: 24,
+    height: 2,
+    backgroundColor: "#5eb8ff",
+    borderRadius: 1,
+  },
+  ownshipTail: {
+    position: "absolute",
+    left: 8,
+    top: 22,
+    width: 12,
+    height: 2,
+    backgroundColor: "#5eb8ff",
+    borderRadius: 1,
   },
   vor: {
     position: "absolute",
