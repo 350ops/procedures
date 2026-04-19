@@ -77,7 +77,7 @@ export default function FlightCapacityScreen() {
           cfg
         );
         lastEcamSpawn.current = spawnE.lastSpawnSec;
-        if (spawnE.event) {
+        if (spawnE.event?.type === "ecam_appear") {
           handleEvents([
             spawnE.event.severity === "warning"
               ? { type: "master_warning" }

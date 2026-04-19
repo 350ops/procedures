@@ -9,6 +9,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "test": "tsx --test components/flightcapacity/atc/*.test.ts",
     "eas:ios:dev": "eas build --profile development --platform ios"
   },
   "dependencies": {
@@ -47,6 +48,7 @@
     "@types/react": "~19.2.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~55.0.0",
+    "tsx": "^4.21.0",
     "typescript": "~5.9.2"
   },
   "private": true,

@@ -5,13 +5,11 @@ import Svg, {
   G,
   Line,
   Path,
-  Polyline,
   Rect,
   Text as SvgText,
 } from "react-native-svg";
 import type {
   Traffic,
-  Vec,
   VorStation,
 } from "@/components/flightcapacity/engine/types";
 

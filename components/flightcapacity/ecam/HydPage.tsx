@@ -5,6 +5,7 @@ import Svg, { Line } from "react-native-svg";
 const RED = "#ef4444";
 const GREEN = "#22c55e";
 const BLUE = "#5b8de6";
+const WHITE = "#ffffff";
 const YELLOW = "#facc15";
 
 export default function HydPage() {
@@ -20,22 +21,22 @@ export default function HydPage() {
         <Text style={[styles.headerCell, { color: RED }]}>RED</Text>
         <Text style={[styles.headerCell, { color: BLUE }]}>BLUE</Text>
         <Text style={[styles.headerCell, { color: GREEN }]}>GREEN</Text>
-        <Text style={[styles.headerCell, { color: "#ffffff" }]}>WHITE</Text>
+        <Text style={[styles.headerCell, { color: WHITE }]}>WHITE</Text>
       </View>
 
       {/* PSI row */}
       <View style={styles.psiRow}>
         <View style={styles.psiCell}>
-          <Text style={[styles.psiValue, { color: RED }]}>0</Text>
-          <Text style={[styles.psiUnit, { color: RED }]}>PSI</Text>
+          <Text style={[styles.psiValue, { color: BLUE }]}>0</Text>
+          <Text style={[styles.psiUnit, { color: BLUE }]}>PSI</Text>
         </View>
         <View style={styles.psiCell}>
           <Text style={[styles.psiValue, { color: RED }]}>0</Text>
           <Text style={[styles.psiUnit, { color: RED }]}>PSI</Text>
         </View>
         <View style={styles.psiCell}>
-          <Text style={[styles.psiValue, { color: GREEN }]}>2500</Text>
-          <Text style={[styles.psiUnit, { color: GREEN }]}>PSI</Text>
+          <Text style={[styles.psiValue, { color: WHITE }]}>2500</Text>
+          <Text style={[styles.psiUnit, { color: WHITE }]}>PSI</Text>
         </View>
         <View style={styles.psiCell}>
           <Text style={[styles.psiValue, { color: GREEN }]}>2500</Text>
@@ -54,9 +55,9 @@ export default function HydPage() {
         >
           {/* Vertical main lines (upper portion) */}
           <Line x1="10%" y1="0%" x2="10%" y2="45%" stroke={RED} strokeWidth={3} />
-          <Line x1="35%" y1="0%" x2="35%" y2="55%" stroke={RED} strokeWidth={3} />
+          <Line x1="35%" y1="0%" x2="35%" y2="55%" stroke={BLUE} strokeWidth={3} />
           <Line x1="60%" y1="0%" x2="60%" y2="55%" stroke={GREEN} strokeWidth={3} />
-          <Line x1="85%" y1="0%" x2="85%" y2="45%" stroke={GREEN} strokeWidth={3} />
+          <Line x1="85%" y1="0%" x2="85%" y2="45%" stroke={WHITE} strokeWidth={3} />
 
           {/* Horizontal cross feeds */}
           <Line x1="10%" y1="18%" x2="35%" y2="18%" stroke={RED} strokeWidth={3} />
@@ -65,9 +66,9 @@ export default function HydPage() {
 
           {/* Vertical lines (lower portion down to cylinders) */}
           <Line x1="10%" y1="45%" x2="10%" y2="75%" stroke={RED} strokeWidth={3} />
-          <Line x1="35%" y1="55%" x2="35%" y2="75%" stroke={RED} strokeWidth={3} />
+          <Line x1="35%" y1="55%" x2="35%" y2="75%" stroke={BLUE} strokeWidth={3} />
           <Line x1="60%" y1="55%" x2="60%" y2="75%" stroke={GREEN} strokeWidth={3} />
-          <Line x1="85%" y1="45%" x2="85%" y2="75%" stroke={GREEN} strokeWidth={3} />
+          <Line x1="85%" y1="45%" x2="85%" y2="75%" stroke={WHITE} strokeWidth={3} />
         </Svg>
 
         {/* LH X FEED valve */}
@@ -104,10 +105,10 @@ export default function HydPage() {
           </View>
         </View>
 
-        {/* RED LOW box 2 */}
+        {/* BLUE LOW box */}
         <View style={[styles.pumpBox, { left: "35%", top: "55%" }]}>
-          <View style={[styles.statusBox, { borderColor: RED }]}>
-            <Text style={[styles.statusText, { color: RED }]}>LOW</Text>
+          <View style={[styles.statusBox, { borderColor: BLUE }]}>
+            <Text style={[styles.statusText, { color: BLUE }]}>LOW</Text>
           </View>
         </View>
 
@@ -122,11 +123,11 @@ export default function HydPage() {
 
         {/* WHITE HYD PUMP ON */}
         <View style={[styles.pumpBox, { left: "85%", top: "45%" }]}>
-          <View style={[styles.cbTag, { borderColor: GREEN }]}>
-            <Text style={[styles.cbText, { color: GREEN }]}>CB 1{"\n"}ON</Text>
+          <View style={[styles.cbTag, { borderColor: WHITE }]}>
+            <Text style={[styles.cbText, { color: WHITE }]}>CB 1{"\n"}ON</Text>
           </View>
-          <View style={[styles.statusBoxTall, { borderColor: GREEN }]}>
-            <Text style={[styles.pumpText, { color: GREEN }]}>
+          <View style={[styles.statusBoxTall, { borderColor: WHITE }]}>
+            <Text style={[styles.pumpText, { color: WHITE }]}>
               WHITE{"\n"}HYD{"\n"}PUMP{"\n"}ON
             </Text>
           </View>
@@ -134,10 +135,10 @@ export default function HydPage() {
 
         {/* Reservoir cylinders */}
         <View style={[styles.tankWrap, { left: "10%", top: "77%" }]}>
-          <View style={[styles.tankFrame, { borderColor: "#14532d" }]} />
+          <View style={[styles.tankFrame, { borderColor: RED }]} />
         </View>
         <View style={[styles.tankWrap, { left: "35%", top: "77%" }]}>
-          <View style={[styles.tankFrame, { borderColor: "#14532d" }]} />
+          <View style={[styles.tankFrame, { borderColor: BLUE }]} />
         </View>
         <View style={[styles.tankWrap, { left: "60%", top: "77%" }]}>
           <View style={[styles.tankFrame, { borderColor: GREEN }]}>
@@ -145,8 +146,8 @@ export default function HydPage() {
           </View>
         </View>
         <View style={[styles.tankWrap, { left: "85%", top: "77%" }]}>
-          <View style={[styles.tankFrame, { borderColor: GREEN }]}>
-            <View style={[styles.tankFill, { backgroundColor: GREEN }]} />
+          <View style={[styles.tankFrame, { borderColor: WHITE }]}>
+            <View style={[styles.tankFill, { backgroundColor: WHITE }]} />
           </View>
         </View>
       </View>

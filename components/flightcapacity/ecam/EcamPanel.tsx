@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type {
+  EcamDisplayPage,
   EcamEvent,
   EcamPage,
 } from "@/components/flightcapacity/engine/types";
@@ -11,7 +12,7 @@ type Props = {
   clock: string;
   masterCaution: boolean;
   masterWarning: boolean;
-  activePage: EcamPage;
+  activePage: EcamDisplayPage;
   pendingEvent: EcamEvent | null;
   onPressMasterCaution: () => void;
   onPressMasterWarning: () => void;

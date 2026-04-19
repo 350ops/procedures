@@ -27,7 +27,8 @@ export type VorStation = {
   pos: Vec;
 };
 
-export type EcamPage = "none" | "fuel" | "hyd";
+export type EcamPage = "fuel" | "hyd";
+export type EcamDisplayPage = "none" | EcamPage;
 
 export type EcamEvent = {
   id: string;
@@ -61,7 +62,7 @@ export type EngineState = {
   traffic: Traffic[];
   vors: VorStation[];
   ecam: EcamEvent[];
-  activeEcamPage: EcamPage;
+  activeEcamPage: EcamDisplayPage;
   masterCaution: boolean;
   masterWarning: boolean;
   verify: VerifyState;

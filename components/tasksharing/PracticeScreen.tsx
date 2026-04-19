@@ -7,7 +7,7 @@ import {
   StyleSheet,
   useColorScheme,
 } from "react-native";
-import { flightPhases, type FlightPhase, type TaskItem } from "@/data/tasksharing";
+import { flightPhases } from "@/data/tasksharing";
 
 export default function PracticeScreen() {
   const theme = useColorScheme() === "dark" ? "dark" : "light";
@@ -22,7 +22,7 @@ export default function PracticeScreen() {
   const phase = flightPhases[currentPhaseIdx];
   const allItems = useMemo(
     () => phase.sections.flatMap((s) => s.items),
-    [currentPhaseIdx]
+    [phase]
   );
   const totalRevealed = revealedItems.size;
   const totalCorrect = Object.values(selfGrades).filter(
@@ -105,11 +105,6 @@ export default function PracticeScreen() {
 
       <ScrollView contentInsetAdjustmentBehavior="automatic">
         {phase.sections.map((section) => {
-          const leftLabel =
-            section.roleLabeling === "CM1_CM2" ? "CM1" : "PF";
-          const rightLabel =
-            section.roleLabeling === "CM1_CM2" ? "CM2" : "PM";
-
           return (
             <View key={section.id} style={styles.section}>
               <Text

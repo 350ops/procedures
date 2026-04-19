@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, type ComponentProps } from "react";
 import {
   View,
   Text,
@@ -9,11 +9,11 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SymbolView } from "expo-symbols";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
+import { IconSymbol } from "@/components/ui/IconSymbol";
 import { flightPhases, getPhaseStats } from "@/data/tasksharing";
 import { iOS, type PhaseProgress } from "./quizDesign";
-import { readProgress } from "./quizProgress";
+import { readProgress, subscribeProgress } from "./quizProgress";
 
 const liquidGlass = Platform.OS === "ios" && isLiquidGlassAvailable();
 
@@ -24,7 +24,20 @@ export default function PhaseListScreen() {
   );
 
   React.useEffect(() => {
-    readProgress().then(setProgress);
+    let mounted = true;
+
+    readProgress().then((value) => {
+      if (mounted) setProgress(value);
+    });
+
+    const unsubscribe = subscribeProgress((value) => {
+      if (mounted) setProgress(value);
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const phases = useMemo(() => flightPhases, []);
@@ -66,12 +79,11 @@ export default function PhaseListScreen() {
           onPress={() => router.back()}
           hitSlop={10}
         >
-          <SymbolView
+          <IconSymbol
             name="chevron.left"
             size={18}
-            tintColor={iOS.blue}
+            color={iOS.blue}
             weight="semibold"
-            resizeMode="scaleAspectFit"
             style={{ width: 11, height: 18 }}
           />
           <Text style={styles.backText}>A350</Text>
@@ -100,12 +112,11 @@ export default function PhaseListScreen() {
             ]}
           >
             <View style={styles.heroHeader}>
-              <SymbolView
+              <IconSymbol
                 name="sparkles"
                 size={16}
-                tintColor="#fff"
+                color="#fff"
                 weight="semibold"
-                resizeMode="scaleAspectFit"
                 style={{ width: 16, height: 16 }}
               />
               <Text style={styles.heroKicker}>DAILY CHALLENGE</Text>
@@ -249,19 +260,18 @@ function StatCard({
   value,
   label,
 }: {
-  symbol: string;
+  symbol: ComponentProps<typeof IconSymbol>["name"];
   tint: string;
   value: string;
   label: string;
 }) {
   return (
     <View style={styles.statCard}>
-      <SymbolView
-        name={symbol as any}
+      <IconSymbol
+        name={symbol}
         size={18}
-        tintColor={tint}
+        color={tint}
         weight="semibold"
-        resizeMode="scaleAspectFit"
         style={{ width: 18, height: 18, marginBottom: 8 }}
       />
       <Text style={styles.statValue}>{value}</Text>
@@ -311,12 +321,11 @@ function PhaseRow({
         ]}
       >
         {complete ? (
-          <SymbolView
+          <IconSymbol
             name="checkmark"
             size={14}
-            tintColor="#fff"
+            color="#fff"
             weight="bold"
-            resizeMode="scaleAspectFit"
             style={{ width: 14, height: 14 }}
           />
         ) : (
@@ -349,12 +358,11 @@ function PhaseRow({
         )}
       </View>
 
-      <SymbolView
+      <IconSymbol
         name="chevron.right"
         size={13}
-        tintColor={iOS.label3}
+        color={iOS.label3}
         weight="semibold"
-        resizeMode="scaleAspectFit"
         style={{ width: 8, height: 13 }}
       />
 
@@ -371,7 +379,7 @@ function ModeRow({
   isLast,
   onPress,
 }: {
-  symbol: string;
+  symbol: ComponentProps<typeof IconSymbol>["name"];
   tint: string;
   title: string;
   subtitle: string;
@@ -387,12 +395,11 @@ function ModeRow({
       ]}
     >
       <View style={[styles.modeIcon, { backgroundColor: `${tint}26` }]}>
-        <SymbolView
-          name={symbol as any}
+        <IconSymbol
+          name={symbol}
           size={18}
-          tintColor={tint}
+          color={tint}
           weight="semibold"
-          resizeMode="scaleAspectFit"
           style={{ width: 18, height: 18 }}
         />
       </View>
@@ -400,12 +407,11 @@ function ModeRow({
         <Text style={styles.modeTitle}>{title}</Text>
         <Text style={styles.modeSubtitle}>{subtitle}</Text>
       </View>
-      <SymbolView
+      <IconSymbol
         name="chevron.right"
         size={13}
-        tintColor={iOS.label3}
+        color={iOS.label3}
         weight="semibold"
-        resizeMode="scaleAspectFit"
         style={{ width: 8, height: 13 }}
       />
       {!isLast && <View style={styles.rowSeparator} />}

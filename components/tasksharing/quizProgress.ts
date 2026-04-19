@@ -13,20 +13,22 @@ export function savePhaseResult(
   phaseId: string,
   pct: number, // 0..100
 ): Record<string, PhaseProgress> {
+  const updatedAt = Date.now();
   const prev = store[phaseId];
   const fraction = Math.max(0, Math.min(1, pct / 100));
   const updated: PhaseProgress = {
     best: prev ? Math.max(prev.best, fraction) : fraction,
     attempts: (prev?.attempts ?? 0) + 1,
     lastPct: Math.round(pct),
-    updatedAt: Date.now(),
+    updatedAt,
   };
   store = { ...store, [phaseId]: updated };
 
   // Update the "_streak" pseudo-entry — counts consecutive phases where
   // lastPct >= 70 chronologically.
-  const streakEntries = Object.values(store)
-    .filter((v, _i, _arr) => true)
+  const streakEntries = Object.entries(store)
+    .filter(([key]) => !key.startsWith("_"))
+    .map(([, value]) => value)
     .sort((a, b) => a.updatedAt - b.updatedAt);
   let streak = 0;
   for (const entry of streakEntries.slice().reverse()) {
@@ -39,7 +41,7 @@ export function savePhaseResult(
       best: streak,
       attempts: streakEntries.length,
       lastPct: streak,
-      updatedAt: Date.now(),
+      updatedAt,
     },
   };
 

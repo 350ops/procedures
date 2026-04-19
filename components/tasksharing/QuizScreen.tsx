@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SymbolView } from "expo-symbols";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -22,6 +21,7 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 import * as Haptics from "expo-haptics";
+import { IconSymbol } from "@/components/ui/IconSymbol";
 import {
   flightPhases,
   getAllTaskItems,
@@ -201,12 +201,11 @@ export default function QuizScreen() {
           ]}
           hitSlop={12}
         >
-          <SymbolView
+          <IconSymbol
             name="xmark"
             size={12}
-            tintColor={iOS.label}
+            color={iOS.label}
             weight="semibold"
-            resizeMode="scaleAspectFit"
             style={{ width: 12, height: 12 }}
           />
         </Pressable>
@@ -326,24 +325,22 @@ export default function QuizScreen() {
                 </View>
                 {reveal === "ok" && (
                   <Animated.View entering={ZoomIn.duration(280)}>
-                    <SymbolView
+                    <IconSymbol
                       name="checkmark.circle.fill"
                       size={22}
-                      tintColor={iOS.green}
+                      color={iOS.green}
                       weight="semibold"
-                      resizeMode="scaleAspectFit"
                       style={{ width: 22, height: 22 }}
                     />
                   </Animated.View>
                 )}
                 {reveal === "no" && (
                   <Animated.View entering={ZoomIn.duration(280)}>
-                    <SymbolView
+                    <IconSymbol
                       name="xmark.circle.fill"
                       size={22}
-                      tintColor={iOS.red}
+                      color={iOS.red}
                       weight="semibold"
-                      resizeMode="scaleAspectFit"
                       style={{ width: 22, height: 22 }}
                     />
                   </Animated.View>
@@ -360,16 +357,15 @@ export default function QuizScreen() {
             style={styles.explanation}
           >
             <View style={styles.explanationHeader}>
-              <SymbolView
+              <IconSymbol
                 name={
                   isCorrect
-                    ? ("checkmark.circle.fill" as any)
-                    : ("xmark.circle.fill" as any)
+                    ? "checkmark.circle.fill"
+                    : "xmark.circle.fill"
                 }
                 size={18}
-                tintColor={isCorrect ? iOS.green : iOS.red}
+                color={isCorrect ? iOS.green : iOS.red}
                 weight="semibold"
-                resizeMode="scaleAspectFit"
                 style={{ width: 18, height: 18 }}
               />
               <Text
@@ -472,12 +468,11 @@ function ResultsScreen({
           ]}
           hitSlop={12}
         >
-          <SymbolView
+          <IconSymbol
             name="xmark"
             size={12}
-            tintColor={iOS.label}
+            color={iOS.label}
             weight="semibold"
-            resizeMode="scaleAspectFit"
             style={{ width: 12, height: 12 }}
           />
         </Pressable>

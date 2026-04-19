@@ -30,7 +30,6 @@ export function play(cue: AudioCue) {
     );
   }
   if (__DEV__) {
-    // eslint-disable-next-line no-console
     console.log(`[flightcapacity audio] ${cue}`);
   }
   for (const l of listeners) l(cue);

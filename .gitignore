@@ -43,3 +43,5 @@ app-example
 
 # Accidental worktree/duplicate project pastes at repo root
 /procedures-*/
+/.claude/worktrees/
+/build/config.gypi

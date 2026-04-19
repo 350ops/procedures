@@ -6,7 +6,7 @@ import {
   StyleSheet,
   useColorScheme,
 } from "react-native";
-import { flightPhases, type FlightPhase } from "@/data/tasksharing";
+import { flightPhases } from "@/data/tasksharing";
 
 interface Props {
   phaseId: string;
